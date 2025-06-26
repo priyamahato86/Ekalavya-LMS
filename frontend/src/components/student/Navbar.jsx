@@ -73,7 +73,7 @@ const Navbar = () => {
                 </button>
                 |{" "}
                 <Link
-                  to="/my-enrollment"
+                  to="/my-enrollments"
                   className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
                 >
                   My Enrollments

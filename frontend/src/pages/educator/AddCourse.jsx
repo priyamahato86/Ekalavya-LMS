@@ -20,11 +20,37 @@ const AddCourse = () => {
   const [chapters, setChapters] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [currentChapterId, setCurrentChapterId] = useState(null);
+  // const [lectureDetails, setLectureDetails] = useState({
+  //   lectureTitle: '',
+  //   lectureDuration: '',
+  //   lectureUrl: '',
+  //   isPreviewFree: false,
+  // });
+  // ✅ NEW: lectureType, documentUrl added
   const [lectureDetails, setLectureDetails] = useState({
     lectureTitle: '',
     lectureDuration: '',
     lectureUrl: '',
+    documentUrl: '',
+    lectureType: 'video',
     isPreviewFree: false,
+  });
+  // ===== NEW: assignment popup state =====
+  const [showAssignmentPopup, setShowAssignmentPopup] = useState(false);
+  const [currentAssignmentChapterId, setCurrentAssignmentChapterId] = useState(null);
+  const [assignmentDetails, setAssignmentDetails] = useState({
+    title: '',
+    description: '',
+    resourceUrl: '',
+    dueDate: '',
+  });
+  // ===== NEW: quiz-question popup state =====
+  const [showQuizPopup, setShowQuizPopup] = useState(false);
+  const [currentQuizChapterId, setCurrentQuizChapterId] = useState(null);
+  const [quizQuestionDetails, setQuizQuestionDetails] = useState({
+    question: '',
+    optionsStr: '',
+    answer: '',
   });
 
   const handleChapter = (action, chapterId) => {
@@ -37,6 +63,12 @@ const AddCourse = () => {
           chapterContent: [],
           collapsed: false,
           chapterOrder: chapters.length > 0 ? chapters.slice(-1)[0].chapterOrder + 1 : 1,
+           // ✅ NEW: support assignments and quiz per schema
+          assignments: [],
+          quiz: {
+            quizType: 'manual',
+            quizQuestions: []
+          }
         };
         setChapters([...chapters, newChapter]);
       }
@@ -67,28 +99,262 @@ const AddCourse = () => {
     }
   };
 
-  const addLecture = () => {
-    setChapters(
-      chapters.map((chapter) => {
-        if (chapter.chapterId === currentChapterId) {
-          const newLecture = {
-            ...lectureDetails,
-            lectureOrder: chapter.chapterContent.length > 0 ? chapter.chapterContent.slice(-1)[0].lectureOrder + 1 : 1,
-            lectureId: uniqid()
-          };
-          chapter.chapterContent.push(newLecture);
+  // const addLecture = () => {
+  //   setChapters(
+  //     chapters.map((chapter) => {
+  //       if (chapter.chapterId === currentChapterId) {
+  //         const newLecture = {
+  //           ...lectureDetails,
+  //           lectureOrder: chapter.chapterContent.length > 0 ? chapter.chapterContent.slice(-1)[0].lectureOrder + 1 : 1,
+  //           lectureId: uniqid()
+  //         };
+  //         chapter.chapterContent.push(newLecture);
+  //       }
+  //       return chapter;
+  //     })
+  //   );
+  //   setShowPopup(false);
+  //   setLectureDetails({
+  //     lectureTitle: '',
+  //     lectureDuration: '',
+  //     lectureUrl: '',
+  //     documentUrl: '',
+  //     lectureType: 'video',
+  //     isPreviewFree: false,
+  //   });
+  // };
+// const addLecture = () => {
+//   setChapters(
+//     chapters.map((chapter) => {
+//       if (chapter.chapterId === currentChapterId) {
+//         const lectureData = {
+//           lectureId: uniqid(),
+//           lectureTitle: lectureDetails.lectureTitle,
+//           lectureDuration: Number(lectureDetails.lectureDuration),
+//           lectureType: lectureDetails.lectureType,
+//           isPreviewFree: lectureDetails.isPreviewFree,
+//           lectureOrder: chapter.chapterContent.length > 0 ? chapter.chapterContent.slice(-1)[0].lectureOrder + 1 : 1,
+//         };
+
+//         // Only add the correct URL based on type
+//         if (lectureDetails.lectureType === 'video') {
+//           lectureData.lectureUrl = lectureDetails.lectureUrl;
+//           lectureData.documentUrl = undefined;
+//         } else if (lectureDetails.lectureType === 'document') {
+//           lectureData.documentUrl = lectureDetails.documentUrl;
+//           lectureData.lectureUrl = undefined;
+//         }
+
+//         chapter.chapterContent.push(lectureData);
+//       }
+//       return chapter;
+//     })
+//   );
+
+//   setShowPopup(false);
+//   setLectureDetails({
+//     lectureTitle: '',
+//     lectureDuration: '',
+//     lectureUrl: '',
+//     documentUrl: '',
+//     lectureType: 'video',
+//     isPreviewFree: false,
+//   });
+// };
+// const addLecture = () => {
+//   if (
+//     (lectureDetails.lectureType === 'video' && !lectureDetails.lectureUrl.trim()) ||
+//     (lectureDetails.lectureType === 'document' && !lectureDetails.documentUrl.trim())
+//   ) {
+//     toast.error(`Please provide a valid ${lectureDetails.lectureType === 'video' ? 'video URL' : 'document URL'}`);
+//     return;
+//   }
+
+//   setChapters(
+//     chapters.map((chapter) => {
+//       if (chapter.chapterId === currentChapterId) {
+//         const lectureData = {
+//           lectureId: uniqid(),
+//           lectureTitle: lectureDetails.lectureTitle,
+//           lectureDuration: Number(lectureDetails.lectureDuration),
+//           lectureType: lectureDetails.lectureType,
+//           isPreviewFree: lectureDetails.isPreviewFree,
+//           lectureOrder:
+//             chapter.chapterContent.length > 0
+//               ? chapter.chapterContent.slice(-1)[0].lectureOrder + 1
+//               : 1,
+//           lectureUrl: undefined,
+//           documentUrl: undefined,
+//         };
+
+//         if (lectureDetails.lectureType === 'video') {
+//           lectureData.lectureUrl = lectureDetails.lectureUrl;
+//         } else {
+//           lectureData.documentUrl = lectureDetails.documentUrl;
+//         }
+
+//         chapter.chapterContent.push(lectureData);
+//       }
+//       return chapter;
+//     })
+//   );
+
+//   setShowPopup(false);
+//   setLectureDetails({
+//     lectureTitle: '',
+//     lectureDuration: '',
+//     lectureUrl: '',
+//     documentUrl: '',
+//     lectureType: 'video',
+//     isPreviewFree: false,
+//   });
+// };
+// ===== NEW: add assignment into chapters =====
+  const addAssignment = () => {
+    const { title, description, resourceUrl, dueDate } = assignmentDetails;
+    if (!title.trim()) {
+      toast.error('Assignment title is required');
+      return;
+    }
+    setChapters((chaps) =>
+      chaps.map((c) => {
+        if (c.chapterId === currentAssignmentChapterId) {
+          return {
+            ...c,
+            assignments: [
+              ...(c.assignments || []),
+              {
+                assignmentId: uniqid(),
+                title: title.trim(),
+                description: description.trim(),
+                resourceUrl: resourceUrl.trim(),
+                dueDate: dueDate.trim(),
+              },
+            ],
+             };
         }
-        return chapter;
+        return c;
       })
     );
-    setShowPopup(false);
-    setLectureDetails({
-      lectureTitle: '',
-      lectureDuration: '',
-      lectureUrl: '',
-      isPreviewFree: false,
+    // reset & close
+    setAssignmentDetails({
+      title: '',
+      description: '',
+      resourceUrl: '',
+      dueDate: '',
     });
+    setShowAssignmentPopup(false);
   };
+  // ===== NEW: add manual quiz question =====
+  const addQuizQuestion = () => {
+    const { question, optionsStr, answer } = quizQuestionDetails;
+    if (!question.trim()) {
+      toast.error('Question text is required');
+      return;
+    }
+    const options = optionsStr
+      .split(',')
+      .map((o) => o.trim())
+      .filter((o) => o);
+    if (options.length < 2) {
+      toast.error('Provide at least two options');
+      return;
+    }
+    if (!answer.trim()) {
+      toast.error('Correct answer is required');
+      return;
+    }
+    setChapters((chaps) =>
+      chaps.map((c) => {
+        if (c.chapterId === currentQuizChapterId) {
+          return {
+            ...c,
+            quiz: {
+              ...c.quiz,
+              quizQuestions: [
+                ...(c.quiz.quizQuestions || []),
+                {
+                  question: question.trim(),
+                  options,
+                  answer: answer.trim(),
+                },
+              ],
+            },
+          };
+        }
+        return c;
+      })
+    );
+    // reset & close
+    setQuizQuestionDetails({ question: '', optionsStr: '', answer: '' });
+    setShowQuizPopup(false);
+  };
+
+
+const addLecture = () => {
+  const isVideo = lectureDetails.lectureType === 'video';
+  const isDocument = lectureDetails.lectureType === 'document';
+
+  // ✋ Check required fields before proceeding
+  if (!lectureDetails.lectureTitle.trim()) {
+    toast.error('Lecture title is required');
+    return;
+  }
+
+  if (!lectureDetails.lectureDuration || isNaN(lectureDetails.lectureDuration)) {
+    toast.error('Lecture duration must be a valid number');
+    return;
+  }
+
+  if (isVideo && !lectureDetails.lectureUrl.trim()) {
+    toast.error('Video URL is required for video lectures');
+    return;
+  }
+
+  if (isDocument && !lectureDetails.documentUrl.trim()) {
+    toast.error('Document URL is required for document lectures');
+    return;
+  }
+
+  setChapters(
+    chapters.map((chapter) => {
+      if (chapter.chapterId === currentChapterId) {
+        const lectureData = {
+          lectureId: uniqid(),
+          lectureTitle: lectureDetails.lectureTitle.trim(),
+          lectureDuration: Number(lectureDetails.lectureDuration),
+          lectureType: lectureDetails.lectureType,
+          isPreviewFree: lectureDetails.isPreviewFree,
+          lectureOrder:
+            chapter.chapterContent.length > 0
+              ? chapter.chapterContent.slice(-1)[0].lectureOrder + 1
+              : 1,
+          lectureUrl: isVideo ? lectureDetails.lectureUrl.trim() : undefined,
+          documentUrl: isDocument ? lectureDetails.documentUrl.trim() : undefined,
+        };
+
+       // chapter.chapterContent.push(lectureData);
+       return {
+          ...chapter,
+          chapterContent: [...chapter.chapterContent, lectureData],
+        };
+      }
+      return chapter;
+    })
+  );
+
+  setShowPopup(false);
+  setLectureDetails({
+    lectureTitle: '',
+    lectureDuration: '',
+    lectureUrl: '',
+    documentUrl: '',
+    lectureType: 'video',
+    isPreviewFree: false,
+  });
+};
+
+
 
   const handleSubmit = async (e) => {
     try {
@@ -149,10 +415,10 @@ const AddCourse = () => {
 
   return (
 
-<div className="h-screen overflow-scroll flex flex-col items-start justify-between md:p-8 md:pb-0 p-4 pt-8 pb-0">
+<div className="min-h-screen overflow-y-auto flex flex-col items-start justify-between md:p-8 md:pb-0 p-4 pt-8 pb-20  ">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20 p-4"
+        className="flex flex-col gap-4 max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20 p-4 "
       >
         <div className="flex flex-col gap-1">
           <p>Course Title</p>
@@ -289,6 +555,118 @@ const AddCourse = () => {
                   >
                     + Add Lectures
                   </div>
+                   {/* ✅ NEW: Assignments UI */}
+                   <div className="mt-4">
+                    <p className="font-semibold mb-2">Assignments</p>
+                    <button
+                      type="button"                    // <<< prevents accidental form-submit
+                      className="bg-gray-200 px-2 py-1 rounded"
+                      onClick={() => {
+                        setCurrentAssignmentChapterId(chapter.chapterId);
+                        setShowAssignmentPopup(true);
+                      }}
+                    >
+                      + Add Assignment
+                    </button>
+                    {chapter.assignments?.map((a, i) => (
+                      <div key={i} className="p-2 mt-2 border rounded text-sm">
+                        <p><strong>{a.title}</strong></p>
+                        <p>{a.description}</p>
+                        <a href={a.resourceUrl} target="_blank" className="text-blue-500">
+                          Resource
+                        </a>
+                        <p>Due: {a.dueDate}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* ✅ NEW: Quiz UI */}
+                 <div className="mt-4">
+                    <p className="font-semibold mb-2">Quiz</p>
+                    <div className="flex gap-2 items-center mb-2">
+                      <label>Quiz Type:</label>
+                      <select
+                        value={chapter.quiz?.quizType}
+                        onChange={(e) => {
+                          const newType = e.target.value;
+                          setChapters((chaps) =>
+                            chaps.map((c) =>
+                              c.chapterId === chapter.chapterId
+                                ? {
+                                    ...c,
+                                    quiz: {
+                                      quizType: newType,
+                                      quizQuestions:
+                                        newType === 'manual'
+                                          ? c.quiz.quizQuestions || []
+                                          : [],
+                                    },
+                                  }
+                                : c
+                                )
+                          );
+                        }}
+                      >
+                        <option value="manual">Manual</option>
+                        <option value="ai">AI</option>
+                      </select>
+                    </div>
+                    {/* manual mode */}
+                    {chapter.quiz.quizType === 'manual' && (
+                      <>
+                        <button
+                          type="button"                // <<< prevents form-submit
+                          className="bg-gray-200 px-2 py-1 rounded"
+                          onClick={() => {
+                            setCurrentQuizChapterId(chapter.chapterId);
+                            setShowQuizPopup(true);
+                          }}
+                        >
+                          + Add Question
+                        </button>
+                        {chapter.quiz.quizQuestions.map((q, i) => (
+                          <div key={i} className="mt-2 p-2 border rounded">
+                            <p><strong>{q.question}</strong></p>
+                            <ul className="list-disc ml-6">
+                              {q.options.map((opt, j) => (
+                                <li key={j}>{opt}</li>
+                              ))}
+                            </ul>
+                            <p className="text-green-500">Answer: {q.answer}</p>
+                          </div>
+                        ))}
+                      </>
+                      )}
+                      {/* AI mode */}
+                    {chapter.quiz.quizType === 'ai' && (
+                      <button
+                        type="button"              // <<< prevents form-submit
+                        className="bg-green-400 text-white px-2 py-1 rounded mt-2"
+                        onClick={async () => {
+                          const topic = prompt('Enter topic for AI Quiz:');
+                          if (!topic) return;
+                          try {
+                            const res = await axios.post(
+                              `${backendUrl}/api/generate-quiz`,
+                              { topic, chapterId: chapter.chapterId },
+                              { headers: { Authorization: `Bearer ${await getToken()}` } }
+                            );
+                            const questions = res.data.quiz || [];
+                            setChapters((chaps) =>
+                              chaps.map((c) =>
+                                c.chapterId === chapter.chapterId
+                                  ? { ...c, quiz: { quizType: 'ai', quizQuestions: questions } }
+                                  : c
+                              )
+                            );
+                          } catch {
+                            toast.error('Quiz generation failed.');
+                          }
+                        }}
+                      >
+                        Generate with AI
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -334,7 +712,7 @@ const AddCourse = () => {
                   />
                 </div>
 
-                <div className="mb-2">
+                {/* <div className="mb-2">
                   <p>Lecture Url</p>
                   <input
                     type="text"
@@ -347,7 +725,56 @@ const AddCourse = () => {
                       })
                     }
                   />
+                </div> */}
+                {/* ✅ NEW: Lecture Type and URL */}
+                <div className="mb-2">
+                  <p>Lecture Type</p>
+                  <select
+                    className="mt-1 block w-full border rounded py-1 px-2"
+                    value={lectureDetails.lectureType}
+                    onChange={(e) =>
+                      setLectureDetails({
+                        ...lectureDetails,
+                        lectureType: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="video">Video</option>
+                    <option value="document">Document</option>
+                  </select>
                 </div>
+
+                {lectureDetails.lectureType === 'video' ? (
+                  <div className="mb-2">
+                    <p>Video URL</p>
+                    <input
+                      type="text"
+                      className="mt-1 block w-full border rounded py-1 px-2"
+                      value={lectureDetails.lectureUrl}
+                      onChange={(e) =>
+                        setLectureDetails({
+                          ...lectureDetails,
+                          lectureUrl: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div className="mb-2">
+                    <p>Document URL</p>
+                    <input
+                      type="text"
+                      className="mt-1 block w-full border rounded py-1 px-2"
+                      value={lectureDetails.documentUrl}
+                      onChange={(e) =>
+                        setLectureDetails({
+                          ...lectureDetails,
+                          documentUrl: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                )}
 
                 <div className="flex gap-2 my-4">
                   <p>Is preview free?</p>
@@ -388,6 +815,130 @@ const AddCourse = () => {
           Add
         </button>
       </form>
+      {/* ===== NEW: Assignment Popup ===== */}
+      {showAssignmentPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add Assignment</h3>
+            <label className="block mb-2">
+              Title
+              <input
+                type="text"
+                className="mt-1 w-full border rounded px-2 py-1"
+                value={assignmentDetails.title}
+                onChange={(e) =>
+                  setAssignmentDetails({ ...assignmentDetails, title: e.target.value })
+                }
+              />
+            </label>
+            <label className="block mb-2">
+              Description
+              <textarea
+                className="mt-1 w-full border rounded px-2 py-1"
+                value={assignmentDetails.description}
+                onChange={(e) =>
+                  setAssignmentDetails({ ...assignmentDetails, description: e.target.value })
+                }
+              />
+              </label>
+            <label className="block mb-2">
+              Resource URL
+              <input
+                type="text"
+                className="mt-1 w-full border rounded px-2 py-1"
+                value={assignmentDetails.resourceUrl}
+                onChange={(e) =>
+                  setAssignmentDetails({ ...assignmentDetails, resourceUrl: e.target.value })
+                }
+              />
+            </label>
+            <label className="block mb-4">
+              Due Date
+              <input
+                type="date"
+                className="mt-1 w-full border rounded px-2 py-1"
+                value={assignmentDetails.dueDate}
+                onChange={(e) =>
+                  setAssignmentDetails({ ...assignmentDetails, dueDate: e.target.value })
+                }
+              />
+            </label>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 rounded"
+                onClick={() => setShowAssignmentPopup(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+                onClick={addAssignment}
+              >
+                Add Assignment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ===== NEW: Quiz Question Popup ===== */}
+      {showQuizPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add Quiz Question</h3>
+            <label className="block mb-2">
+              Question
+              <input
+                type="text"
+                className="mt-1 w-full border rounded px-2 py-1"
+                value={quizQuestionDetails.question}
+                onChange={(e) =>
+                  setQuizQuestionDetails({ ...quizQuestionDetails, question: e.target.value })
+                }
+              />
+            </label>
+            <label className="block mb-2">
+              Options (comma-separated)
+              <input
+                type="text"
+                className="mt-1 w-full border rounded px-2 py-1"
+                value={quizQuestionDetails.optionsStr}
+                onChange={(e) =>
+                  setQuizQuestionDetails({ ...quizQuestionDetails, optionsStr: e.target.value })
+                }
+              />
+            </label>
+            <label className="block mb-4">
+              Correct Answer
+              <input
+                type="text"
+                className="mt-1 w-full border rounded px-2 py-1"
+                value={quizQuestionDetails.answer}
+                onChange={(e) =>
+                  setQuizQuestionDetails({ ...quizQuestionDetails, answer: e.target.value })
+                }
+              />
+              </label>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 rounded"
+                onClick={() => setShowQuizPopup(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+                onClick={addQuizQuestion}
+              >
+                Add Question
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

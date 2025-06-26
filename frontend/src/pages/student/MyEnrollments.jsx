@@ -50,6 +50,9 @@ const MyEnrollments = () => {
 
     }, [enrolledCourses])
 
+    
+
+
     return (
  <>
       <div className="md:px-36 px-8 pt-10 pb-24">
@@ -86,6 +89,8 @@ const MyEnrollments = () => {
                       className="bg-gray-300 rounded-full"
                     />
                   </div>
+                  
+
                 </td>
                 <td className="px-4 py-3 max-sm:hidden">
                   {calculateCourseDuration(course)}
