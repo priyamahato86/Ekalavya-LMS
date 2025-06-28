@@ -13,14 +13,14 @@ const Navbar = () => {
 
  // const isCoursesListPage = location.pathname.includes('/course-list');
 
-  const { backendUrl, isEducator, setIsEducator, navigate } = useContext(AppContext)
+  const { backendUrl, isEducator, setIsEducator, navigate,userData } = useContext(AppContext)
 
   // const { openSignIn } = useClerk()
   // const { user } = useUser()
   const token = localStorage.getItem('token');
   const handleLogout = () => {
   localStorage.removeItem('token');
-  navigate('/signin');
+  navigate('/');
 };
 
 
@@ -73,21 +73,33 @@ const Navbar = () => {
 
         <div className="absolute right-4 hidden md:flex items-center space-x-4">
           
-            {token?  (
+            {token && userData ?  (
               <>
-                <button
-                  onClick={becomeEducator}
-                  className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
-                >
-                  {isEducator ? "Educator Dashboard" : "Become Educator"}
-                </button>
-                |{" "}
-                <Link
-                  to="/my-enrollments"
-                  className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
-                >
-                  My Enrollments
-                </Link>{" "}
+                {userData?.role === "educator" && (
+      <button
+        onClick={() => navigate('/educator')}
+        className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
+      >
+        Educator Dashboard
+      </button>
+    )}
+
+    {userData?.role === "student" && (
+      <>
+        {/* <button
+          onClick={becomeEducator}
+          className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
+        >
+          Become Educator
+        </button> */}
+        <Link
+          to="/my-enrollments"
+          className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
+        >
+          My Enrollments
+        </Link>
+      </>
+    )}
                 <button
             onClick={handleLogout}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
@@ -157,15 +169,33 @@ const Navbar = () => {
       )} */}
       {isMenuOpen && (
     <div className="md:hidden bg-white px-4 pt-2 pb-4 space-y-4">
-      {token ? (
+      {token && userData ? (
         <>
-          <button
-            onClick={becomeEducator}
-            className="text-gray-800 font-medium hover:text-blue-600 transition-colors block w-full text-left"
-          >
-            {isEducator ? "Educator Dashboard" : "Become Educator"}
-          </button>
-          <Link to="/my-enrollments" className="block text-gray-800 font-medium hover:text-blue-600">My Enrollments</Link>
+          {userData?.role === "educator" && (
+      <button
+        onClick={() => navigate('/educator')}
+        className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
+      >
+        Educator Dashboard
+      </button>
+    )}
+
+    {userData?.role === "student" && (
+      <>
+        {/* <button
+          onClick={becomeEducator}
+          className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
+        >
+          Become Educator
+        </button> */}
+        <Link
+          to="/my-enrollments"
+          className="text-gray-800 font-medium hover:text-blue-600 transition-colors"
+        >
+          My Enrollments
+        </Link>
+      </>
+    )}
           <button
             onClick={handleLogout}
             className="w-full bg-blue-600 hover:bg-blue-700 text-black py-2 rounded"

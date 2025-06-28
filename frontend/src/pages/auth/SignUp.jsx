@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Mail, Lock, User, GraduationCap,X } from 'lucide-react';
+import { useContext } from 'react';
+import { AppContext } from '../../context/AppContext';
+
 
 const SignUp = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '',role: 'student' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AppContext);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -18,7 +23,9 @@ const SignUp = () => {
     try {
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/signup`, form);
       if (res.data.success) {
-        toast.success("Account created! Please login.");
+        login(res.data.user, res.data.token);
+        toast.success("Account created!");
+        navigate('/');
       } else {
         toast.error(res.data.message);
       }

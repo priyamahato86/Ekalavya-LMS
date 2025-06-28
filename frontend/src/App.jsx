@@ -17,6 +17,8 @@ import MyEnrollments from './pages/student/MyEnrollments'
 import Loading from './components/student/Loading'
 import Login from './pages/auth/Login'
 import SignUp from './pages/auth/SignUp'
+import StudentRoute from './components/ProtectedRoutes/StudentRoute'
+import EducatorRoute from './components/ProtectedRoutes/EducatorRoute'
 
 const App = () => {
 
@@ -34,11 +36,30 @@ const App = () => {
             <Route path="/course-list" element={<CoursesList />} />
             <Route path="/course-list/:input" element={<CoursesList />} />
             <Route path="/course/:id" element={<CourseDetails />} />
-            <Route path="/my-enrollments" element={<MyEnrollments/>} />
+            {/* <Route path="/my-enrollments" element={<MyEnrollments/>} /> */}
             <Route path="/player/:courseId" element={<Player/>} />
             <Route path="/loading/:path" element={<Loading />} />
-            <Route path="/educator" element={<Educator/>} >
-              <Route path="/educator" element={<Dashboard/>} />
+            {/* Protected student-only route */}
+        <Route
+          path="/my-enrollments"
+          element={
+            <StudentRoute>
+              <MyEnrollments />
+            </StudentRoute>
+          }
+        />
+
+        {/* Protected educator-only routes */}
+        <Route
+          path="/educator"
+          element={
+            <EducatorRoute>
+              <Educator />
+            </EducatorRoute>
+          }
+        >
+            {/* <Route path="/educator" element={<Educator/>} > */}
+              <Route index element={<Dashboard />} />
               <Route path="add-course" element={<AddCourse/>} />
               <Route path="my-courses" element={<MyCourses/>} />
               <Route path="students-enrolled" element={<StudentsEnrolled/>} />

@@ -3,11 +3,15 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, X } from 'lucide-react';
+import { AppContext } from '../../context/AppContext';
+import { useContext } from 'react';
 
 const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AppContext);
+
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -19,7 +23,8 @@ const Login = () => {
     try {
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, form);
       if (res.data.success) {
-        localStorage.setItem('token', res.data.token);
+        //localStorage.setItem('token', res.data.token);
+        login(res.data.user, res.data.token);
         toast.success("Logged in successfully!");
         navigate('/');
       } else {
