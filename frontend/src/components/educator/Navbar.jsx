@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Navbar = ( ) => {
 
-  const { isEducator , user, logout } = useContext(AppContext)
+  const {  user, logout } = useContext(AppContext)
   const navigate = useNavigate()
 
   return (
@@ -28,7 +28,8 @@ const Navbar = ( ) => {
             </div>
 
             <div className='ml-auto flex items-center gap-5 text-gray-500 relative'>
-            <p>Hi! {user ? user.fullName : 'Developers'}</p>
+          {user ? <p>Hi! {user.fullName}</p> : <p>Hi! Developer</p>}
+
             <button
             onClick={logout}
             className="ml-2 px-3 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
