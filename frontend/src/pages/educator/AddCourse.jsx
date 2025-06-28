@@ -11,7 +11,7 @@ const AddCourse = () => {
   const editorRef = useRef(null);
   const quillRef = useRef(null);
 
-  const { backendUrl, getToken } = useContext(AppContext)
+  const { backendUrl} = useContext(AppContext)
 
   const [courseTitle, setCourseTitle] = useState('')
   const [coursePrice, setCoursePrice] = useState(0)
@@ -377,7 +377,7 @@ const addLecture = () => {
       formData.append('courseData', JSON.stringify(courseData))
       formData.append('image', image)
 
-      const token = await getToken()
+      const token = localStorage.getItem('token');
 
       const { data } = await axios.post(backendUrl + '/api/educator/add-course', formData,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -645,10 +645,12 @@ const addLecture = () => {
                           const topic = prompt('Enter topic for AI Quiz:');
                           if (!topic) return;
                           try {
+                            const token = localStorage.getItem('token');
+if (!token) return;
                             const res = await axios.post(
                               `${backendUrl}/api/generate-quiz`,
                               { topic, chapterId: chapter.chapterId },
-                              { headers: { Authorization: `Bearer ${await getToken()}` } }
+                              { headers: { Authorization: `Bearer ${token}` } }
                             );
                             const questions = res.data.quiz || [];
                             setChapters((chaps) =>

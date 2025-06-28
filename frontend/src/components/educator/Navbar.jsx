@@ -1,17 +1,15 @@
 import { useContext } from 'react';
-import { assets } from '../../assets/assets';
+//import { assets } from '../../assets/assets';
 import { AppContext } from '../../context/AppContext';
-import { UserButton, useUser } from '@clerk/clerk-react';
 import { BookOpen } from 'lucide-react'
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = ( ) => {
 
-  const { isEducator } = useContext(AppContext)
-  const { user } = useUser()
+  const { isEducator , user, logout } = useContext(AppContext)
   const navigate = useNavigate()
 
-  return isEducator && user && (
+  return (
 
 <header className="shadow-sm sticky top-0 bg-white z-50">
           <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 flex justify-center items-center h-16">
@@ -31,7 +29,12 @@ const Navbar = ( ) => {
 
             <div className='ml-auto flex items-center gap-5 text-gray-500 relative'>
             <p>Hi! {user ? user.fullName : 'Developers'}</p>
-            {user ? <UserButton/> : <img src={assets.profile_img} alt="profile" className='max-w-8'/>}
+            <button
+            onClick={logout}
+            className="ml-2 px-3 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
+          >
+            Logout
+          </button>
         </div>
           </div>
         </header>

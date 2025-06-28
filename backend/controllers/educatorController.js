@@ -2,28 +2,43 @@ import { v2 as cloudinary } from 'cloudinary'
 import Course from '../models/Course.js';
 import { Purchase } from '../models/Purchase.js';
 import User from '../models/User.js';
-import { clerkClient } from '@clerk/express'
+//import { clerkClient } from '@clerk/express'
 
 // update role to educator
+// export const updateRoleToEducator = async (req, res) => {
+
+//     try {
+
+//         const userId = req.user.id;
+
+//         await clerkClient.users.updateUserMetadata(userId, {
+//             publicMetadata: {
+//                 role: 'educator',
+//             },
+//         })
+
+//         res.json({ success: true, message: 'You can publish a course now' })
+
+//     } catch (error) {
+//         res.json({ success: false, message: error.message })
+//     }
+
+// }
 export const updateRoleToEducator = async (req, res) => {
+  try {
+    const userId = req.user.id; // updated
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    try {
+    user.role = 'educator';
+    await user.save();
 
-        const userId = req.auth.userId
-
-        await clerkClient.users.updateUserMetadata(userId, {
-            publicMetadata: {
-                role: 'educator',
-            },
-        })
-
-        res.json({ success: true, message: 'You can publish a course now' })
-
-    } catch (error) {
-        res.json({ success: false, message: error.message })
-    }
-
+    res.json({ success: true, message: 'You can publish a course now' });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
 }
+
 
 // Add New Course
 // export const addCourse = async (req, res) => {
@@ -64,7 +79,7 @@ export const addCourse = async (req, res) => {
     try {
         const { courseData } = req.body;
         const imageFile = req.file;
-        const educatorId = req.auth.userId;
+        const educatorId = req.user.id;
 
         if (!imageFile) {
             return res.json({ success: false, message: 'Thumbnail Not Attached' });
@@ -96,7 +111,7 @@ export const addCourse = async (req, res) => {
 export const getEducatorCourses = async (req, res) => {
     try {
 
-        const educator = req.auth.userId
+        const educator = req.user.id;
 
         const courses = await Course.find({ educator })
 
@@ -110,7 +125,7 @@ export const getEducatorCourses = async (req, res) => {
 // Get Educator Dashboard Data ( Total Earning, Enrolled Students, No. of Courses)
 export const educatorDashboardData = async (req, res) => {
     try {
-        const educator = req.auth.userId;
+        const educator = req.user.id;
 
         const courses = await Course.find({ educator });
 
@@ -157,7 +172,7 @@ export const educatorDashboardData = async (req, res) => {
 // Get Enrolled Students Data with Purchase Data
 export const getEnrolledStudentsData = async (req, res) => {
     try {
-        const educator = req.auth.userId;
+        const educator = req.user.id;
 
         // Fetch all courses created by the educator
         const courses = await Course.find({ educator });

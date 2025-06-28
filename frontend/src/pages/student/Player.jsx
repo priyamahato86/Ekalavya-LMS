@@ -12,7 +12,7 @@ import Loading from '../../components/student/Loading';
 
 // const Player = ({}) => {
 
-//   const { enrolledCourses, backendUrl, getToken, calculateChapterTime, userData, fetchUserEnrolledCourses } = useContext(AppContext)
+//   const { enrolledCourses, backendUrl,  calculateChapterTime, userData, fetchUserEnrolledCourses } = useContext(AppContext)
 
 //   const { courseId } = useParams()
 //   const [courseData, setCourseData] = useState(null)
@@ -315,7 +315,7 @@ import Loading from '../../components/student/Loading';
 // import axios from 'axios';
 
 const Player = () => {
-  const { enrolledCourses, backendUrl, getToken, calculateChapterTime, userData, fetchUserEnrolledCourses } = useContext(AppContext);
+  const { enrolledCourses, backendUrl,  calculateChapterTime, userData, fetchUserEnrolledCourses } = useContext(AppContext);
 
   const { courseId } = useParams();
   const [courseData, setCourseData] = useState(null);
@@ -351,7 +351,8 @@ const Player = () => {
 
   const markLectureAsCompleted = async (lectureId) => {
     try {
-      const token = await getToken();
+      const token = localStorage.getItem('token');
+
       const { data } = await axios.post(
         backendUrl + '/api/user/update-course-progress',
         { courseId, lectureId },
@@ -371,7 +372,8 @@ const Player = () => {
 
   const getCourseProgress = async () => {
     try {
-      const token = await getToken();
+      const token = localStorage.getItem('token');
+
       const { data } = await axios.post(
         backendUrl + '/api/user/get-course-progress',
         { courseId },
@@ -390,7 +392,8 @@ const Player = () => {
 
   const handleRate = async (rating) => {
     try {
-      const token = await getToken();
+      const token = localStorage.getItem('token');
+
       const { data } = await axios.post(
         backendUrl + '/api/user/add-rating',
         { courseId, rating },

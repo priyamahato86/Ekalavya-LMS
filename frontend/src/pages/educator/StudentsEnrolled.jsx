@@ -6,13 +6,14 @@ import Loading from '../../components/student/Loading';
 
 const StudentsEnrolled = () => {
 
-  const { backendUrl, getToken, isEducator } = useContext(AppContext)
+  const { backendUrl, isEducator } = useContext(AppContext)
 
   const [enrolledStudents, setEnrolledStudents] = useState(null)
 
   const fetchEnrolledStudents = async () => {
     try {
-      const token = await getToken()
+      const token = localStorage.getItem('token');
+
 
       const { data } = await axios.get(backendUrl + '/api/educator/enrolled-students',
         { headers: { Authorization: `Bearer ${token}` } }

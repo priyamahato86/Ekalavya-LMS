@@ -15,6 +15,8 @@ import { ToastContainer } from 'react-toastify'
 import Player from './pages/student/Player'
 import MyEnrollments from './pages/student/MyEnrollments'
 import Loading from './components/student/Loading'
+import Login from './pages/auth/Login'
+import SignUp from './pages/auth/SignUp'
 
 const App = () => {
 
@@ -27,6 +29,8 @@ const App = () => {
       
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/signin" element={<Login />} />
+  <Route path="/signup" element={<SignUp />} />
             <Route path="/course-list" element={<CoursesList />} />
             <Route path="/course-list/:input" element={<CoursesList />} />
             <Route path="/course/:id" element={<CourseDetails />} />

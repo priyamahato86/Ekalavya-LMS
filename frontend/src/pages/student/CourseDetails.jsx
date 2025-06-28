@@ -7,7 +7,6 @@ import { AppContext } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 import humanizeDuration from 'humanize-duration'
 import YouTube from 'react-youtube';
-import { useAuth } from '@clerk/clerk-react';
 import Loading from '../../components/student/Loading';
 
 const CourseDetails = () => {
@@ -19,7 +18,7 @@ const CourseDetails = () => {
   const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false)
 
   const { backendUrl, currency, userData, calculateChapterTime, calculateCourseDuration, calculateRating, calculateNoOfLectures } = useContext(AppContext)
-  const { getToken } = useAuth()
+  
 
 
   const fetchCourseData = async () => {
@@ -64,7 +63,8 @@ const CourseDetails = () => {
         return toast.warn('Already Enrolled')
       }
 
-      const token = await getToken();
+      const token = localStorage.getItem('token');
+
 
       const { data } = await axios.post(backendUrl + '/api/user/purchase',
         { courseId: courseData._id },
