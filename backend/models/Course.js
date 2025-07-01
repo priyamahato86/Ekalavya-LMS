@@ -134,7 +134,7 @@ const courseSchema = new mongoose.Schema(
     courseDescription: { type: String, required: true },
     courseThumbnail: { type: String },
     coursePrice: { type: Number, required: true },
-    isPublished: { type: Boolean, default: true },
+    isPublished: { type: Boolean, default: false },
     discount: { type: Number, required: true, min: 0, max: 100 },
     courseContent: [chapterSchema],
     educator: {

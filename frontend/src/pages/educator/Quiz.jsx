@@ -25,6 +25,7 @@ const Quiz = () => {
         try {
           const { data } = await axios.get(`${backendUrl}/api/educator/quiz`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
           setQuizzes(data.quizzes);
+          console.log('Fetched quizzes:', data.quizzes);
         } catch (err) {
           toast.error(err.message);
         } finally {
@@ -97,7 +98,7 @@ const Quiz = () => {
               </tr>
             </thead>
             <tbody className="text-sm text-gray-500">
-              {quizzes.map((q, index) => (
+              {quizzes.filter((q) => q.quizQuestions && q.quizQuestions.length > 0).map((q, index) => (
                 <tr key={index} className="border-b border-gray-500/20">
                   <td className="px-4 py-3 truncate">
                     {courses.find((c) => c._id === q.courseId)?.courseTitle || q.courseId}

@@ -11,7 +11,6 @@
 //   const [loading, setLoading] = useState(false);
 //   const [assignmentsLoading, setAssignmentsLoading] = useState(true);
 
-
 //   const [form, setForm] = useState({
 //     title: '',
 //     totalMarks: '',
@@ -192,46 +191,54 @@
 // };
 
 // export default AddAssignments;
-import { useContext, useEffect, useState } from 'react';
-import { AppContext } from '../../context/AppContext';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "../../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const AddAssignments = () => {
-  const { backendUrl, isEducator } = useContext(AppContext);
+  const { backendUrl, isEducator, navigate } = useContext(AppContext);
   const [courses, setCourses] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [assignmentsLoading, setAssignmentsLoading] = useState(true);
-   const [editingAssignmentId, setEditingAssignmentId] = useState(null);
+  const [editingAssignmentId, setEditingAssignmentId] = useState(null);
 
   const [form, setForm] = useState({
-    courseId: '',
-    chapterId: '',
-    title: '',
-    description: '',
-    resourceUrl: '',
-    dueDate: ''
+    courseId: "",
+    chapterId: "",
+    title: "",
+    description: "",
+    resourceUrl: "",
+    dueDate: "",
   });
 
   useEffect(() => {
     if (isEducator) {
-      axios.get(`${backendUrl}/api/educator/course`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
-        .then(res => setCourses(res.data.courses))
-        .catch(err => toast.error(err.message));
+      axios
+        .get(`${backendUrl}/api/educator/course`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        })
+        .then((res) => setCourses(res.data.courses))
+        .catch((err) => toast.error(err.message));
     }
   }, [isEducator]);
 
   useEffect(() => {
-    const course = courses.find(c => c._id === form.courseId);
+    const course = courses.find((c) => c._id === form.courseId);
     setChapters(course?.courseContent || []);
   }, [form.courseId, courses]);
 
   const fetchAssignments = async () => {
     setAssignmentsLoading(true);
     try {
-      const { data } = await axios.get(`${backendUrl}/api/educator/assignment`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const { data } = await axios.get(
+        `${backendUrl}/api/educator/assignment`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
       setAssignments(data.assignments);
     } catch (err) {
       toast.error(err.message);
@@ -240,31 +247,44 @@ const AddAssignments = () => {
     }
   };
 
-  useEffect(() => { if (isEducator) fetchAssignments(); }, [isEducator]);
+  useEffect(() => {
+    if (isEducator) fetchAssignments();
+  }, [isEducator]);
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const { courseId, chapterId, title } = form;
-    if (!courseId || !chapterId || !title) return toast.error('Required fields missing');
+    if (!courseId || !chapterId || !title)
+      return toast.error("Required fields missing");
 
- try {
+    try {
       setLoading(true);
       const endpoint = editingAssignmentId
         ? `${backendUrl}/api/educator/edit-assignment/${editingAssignmentId}`
-        : `${backendUrl}/api/educator/add-assignments`;
-      const method = editingAssignmentId ? 'put' : 'post';
+        : `${backendUrl}/api/educator/assignment/add`;
+      const method = editingAssignmentId ? "put" : "post";
 
       const { data } = await axios[method](endpoint, form, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
       if (data.success) {
-        toast.success(editingAssignmentId ? 'Assignment updated' : 'Assignment added');
+        toast.success(
+          editingAssignmentId ? "Assignment updated" : "Assignment added"
+        );
         setForm({
-          courseId: '', chapterId: '', title: '', description: '', resourceUrl: '', dueDate: ''
+          courseId: "",
+          chapterId: "",
+          title: "",
+          description: "",
+          resourceUrl: "",
+          dueDate: "",
         });
         setEditingAssignmentId(null);
         fetchAssignments();
+        setTimeout(() => {
+          navigate("/educator/assignment");
+        }, 1000);
       } else toast.error(data.message);
     } catch (err) {
       toast.error(err.message);
@@ -276,24 +296,88 @@ const AddAssignments = () => {
   return (
     <div className="min-h-screen p-4 md:p-8 space-y-6">
       <div className="max-w-4xl bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">{editingAssignmentId ? 'Edit Assignment' : 'Add Assignment'}</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {editingAssignmentId ? "Edit Assignment" : "Add Assignment"}
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-4">
-            <select value={form.courseId} onChange={e => setForm(prev => ({ ...prev, courseId: e.target.value, chapterId: '' }))} className="p-2 border rounded flex-1">
+            <select
+              value={form.courseId}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  courseId: e.target.value,
+                  chapterId: "",
+                }))
+              }
+              className="p-2 border rounded flex-1"
+            >
               <option value="">Select Course</option>
-              {courses.map(c => <option key={c._id} value={c._id}>{c.courseTitle}</option>)}
+              {courses.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.courseTitle}
+                </option>
+              ))}
             </select>
-            <select value={form.chapterId} onChange={e => setForm(prev => ({ ...prev, chapterId: e.target.value }))} className="p-2 border rounded flex-1">
+            <select
+              value={form.chapterId}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, chapterId: e.target.value }))
+              }
+              className="p-2 border rounded flex-1"
+            >
               <option value="">Select Chapter</option>
-              {chapters.map(ch => <option key={ch.chapterId} value={ch.chapterId}>{ch.chapterTitle}</option>)}
+              {chapters.map((ch) => (
+                <option key={ch.chapterId} value={ch.chapterId}>
+                  {ch.chapterTitle}
+                </option>
+              ))}
             </select>
           </div>
-          <input type="text" value={form.title} onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Assignment Title" className="p-2 border rounded w-full" />
-          <textarea value={form.description} onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Description" className="p-2 border rounded w-full" />
-          <input type="url" value={form.resourceUrl} onChange={e => setForm(prev => ({ ...prev, resourceUrl: e.target.value }))} placeholder="Resource URL (optional)" className="p-2 border rounded w-full" />
-          <input type="date" value={form.dueDate} onChange={e => setForm(prev => ({ ...prev, dueDate: e.target.value }))} className="p-2 border rounded w-full" />
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded">
-            {loading ? 'Saving...' : (editingAssignmentId ? 'Update Assignment' : 'Create Assignment')}
+          <input
+            type="text"
+            value={form.title}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, title: e.target.value }))
+            }
+            placeholder="Assignment Title"
+            className="p-2 border rounded w-full"
+          />
+          <textarea
+            value={form.description}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, description: e.target.value }))
+            }
+            placeholder="Description"
+            className="p-2 border rounded w-full"
+          />
+          <input
+            type="url"
+            value={form.resourceUrl}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, resourceUrl: e.target.value }))
+            }
+            placeholder="Resource URL (optional)"
+            className="p-2 border rounded w-full"
+          />
+          <input
+            type="date"
+            value={form.dueDate}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, dueDate: e.target.value }))
+            }
+            className="p-2 border rounded w-full"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded"
+          >
+            {loading
+              ? "Saving..."
+              : editingAssignmentId
+              ? "Update Assignment"
+              : "Create Assignment"}
           </button>
         </form>
       </div>

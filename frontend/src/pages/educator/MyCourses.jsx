@@ -1,43 +1,76 @@
-import  { useContext, useEffect, useState } from 'react';
-import { AppContext } from '../../context/AppContext';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import Loading from '../../components/student/Loading';
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "../../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
+import Loading from "../../components/student/Loading";
 
 const MyCourses = () => {
+  const { backendUrl, isEducator, currency, navigate } = useContext(AppContext);
 
-  const { backendUrl, isEducator, currency ,navigate } = useContext(AppContext)
-
-  const [courses, setCourses] = useState(null)
+  const [courses, setCourses] = useState(null);
 
   const fetchEducatorCourses = async () => {
-
     try {
+      const token = localStorage.getItem("token");
 
-      const token = localStorage.getItem('token');
+      const { data } = await axios.get(backendUrl + "/api/educator/course", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-
-      const { data } = await axios.get(backendUrl + '/api/educator/course', { headers: { Authorization: `Bearer ${token}` } })
-
-      data.success && setCourses(data.courses)
-
+      data.success && setCourses(data.courses);
     } catch (error) {
-      toast.error(error.message)
+      toast.error(error.message);
     }
+  };
 
+  const handleMakeLive = async (courseId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.put(
+        `${backendUrl}/api/educator/publish-course/${courseId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (data.success) {
+        toast.success("Course is now live");
+        fetchEducatorCourses();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async (courseId) => {
+  if (!window.confirm("Are you sure you want to delete this course?")) return;
+  try {
+    const token = localStorage.getItem("token");
+    const { data } = await axios.delete(
+      `${backendUrl}/api/educator/delete-course/${courseId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (data.success) {
+      toast.success("Course deleted");
+      fetchEducatorCourses();
+    } else {
+      toast.error(data.message);
+    }
+  } catch (err) {
+    toast.error(err.message);
   }
+};
+
 
   useEffect(() => {
     if (isEducator) {
-      fetchEducatorCourses()
+      fetchEducatorCourses();
     }
-  }, [isEducator])
+  }, [isEducator]);
 
   return courses ? (
-
-<div className="h-screen flex flex-col items-start justify-between md:p-8 md:pb-0 p-4 pt-8 pb-0 ">
+    <div className="h-screen flex flex-col items-start justify-between md:p-8 md:pb-0 p-4 pt-8 pb-0 ">
       <div className="w-full">
-        {/* <h2 className="pb-4 text-lg font-medium">Courses</h2> */}
         <div className="flex items-center justify-between pb-4">
           <h2 className="text-lg font-medium">Courses</h2>
           <button
@@ -59,6 +92,7 @@ const MyCourses = () => {
                 <th className="px-4 py-3 font-semibold truncate">
                   Published On
                 </th>
+                <th className="px-4 py-3 font-semibold truncate">Actions</th>
               </tr>
             </thead>
             <tbody className="text-sm text-gray-500">
@@ -87,6 +121,34 @@ const MyCourses = () => {
                   </td>
                   <td className="px-4 py-3">
                     {new Date(course.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    {!course.isPublished ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleMakeLive(course._id)}
+                          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs"
+                        >
+                          Make it Live
+                        </button>
+                        <button
+                          onClick={() => navigate(`/educator/course/edit/${course._id}`)}
+                          className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-xs"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(course._id)}
+                          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-green-700 font-medium text-xs">
+                        Live
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

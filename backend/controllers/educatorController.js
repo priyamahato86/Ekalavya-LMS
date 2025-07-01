@@ -2,6 +2,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import Course from '../models/Course.js';
 import { Purchase } from '../models/Purchase.js';
 import User from '../models/User.js';
+import mongoose from 'mongoose';
 //import { clerkClient } from '@clerk/express'
 
 // update role to educator
@@ -106,6 +107,61 @@ export const addCourse = async (req, res) => {
     }
 };
 
+export const publishCourse = async (req, res) => {
+  try {
+    const course = await Course.findByIdAndUpdate(
+      req.params.courseId,
+      { isPublished: true },
+      { new: true }
+    );
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    res.json({ success: true, message: "Course is now live", course });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getSingleCourse = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    res.status(200).json({ success: true, course });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const deleteCourse = async (req, res) => {
+  try {
+    const deleted = await Course.findByIdAndDelete(req.params.courseId);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+    res.json({ success: true, message: "Course deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const updateCourse = async (req, res) => {
+  try {
+    const updated = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ success: true, course: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+
 export const addAssignmentToChapter = async (req, res) => {
   try {
     const { courseId, chapterId, title, description, resourceUrl, dueDate } = req.body;
@@ -130,6 +186,7 @@ export const addAssignmentToChapter = async (req, res) => {
     res.json({ success: true, message: 'Assignment added', assignment: newAssignment });
 
   } catch (error) {
+    console.error("Error in addAssignment:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
