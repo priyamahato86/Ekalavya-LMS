@@ -106,6 +106,197 @@ export const addCourse = async (req, res) => {
     }
 };
 
+export const addAssignmentToChapter = async (req, res) => {
+  try {
+    const { courseId, chapterId, title, description, resourceUrl, dueDate } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    const chapter = course.courseContent.find(ch => ch.chapterId === chapterId);
+    if (!chapter) return res.status(404).json({ success: false, message: 'Chapter not found' });
+
+    const newAssignment = {
+      assignmentId: new mongoose.Types.ObjectId().toString(),
+      title,
+      description,
+      resourceUrl,
+      dueDate,
+    };
+
+    chapter.assignments.push(newAssignment);
+    await course.save();
+
+    res.json({ success: true, message: 'Assignment added', assignment: newAssignment });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get All Assignments of Educator's Courses
+export const getAllAssignments = async (req, res) => {
+  try {
+    const educatorId = req.user.id;
+    const courses = await Course.find({ educator: educatorId });
+
+    const assignments = [];
+
+    courses.forEach(course => {
+      course.courseContent.forEach(chapter => {
+        if (chapter.assignments && chapter.assignments.length > 0) {
+          chapter.assignments.forEach(assign => {
+            assignments.push({
+              assignmentId: assign.assignmentId,
+              title: assign.title,
+              description: assign.description,
+              dueDate: assign.dueDate,
+              resourceUrl: assign.resourceUrl,
+              courseId: course._id.toString(),
+              chapterId: chapter.chapterId
+            });
+          });
+        }
+      });
+    });
+
+    res.json({ success: true, assignments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const assignmentController = async (req, res) => {
+  try {
+    const { courseId, chapterId, assignmentId } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    const chapter = course.courseContent.find(ch => ch.chapterId === chapterId);
+    if (!chapter) return res.status(404).json({ success: false, message: 'Chapter not found' });
+
+    const assignmentIndex = chapter.assignments.findIndex(a => a.assignmentId === assignmentId);
+    if (assignmentIndex === -1) return res.status(404).json({ success: false, message: 'Assignment not found' });
+
+    if (req.method === 'DELETE') {
+      // Delete assignment
+      chapter.assignments.splice(assignmentIndex, 1);
+      await course.save();
+      return res.json({ success: true, message: 'Assignment deleted successfully' });
+    }
+
+    if (req.method === 'PUT') {
+      const { title, description, resourceUrl, dueDate } = req.body;
+
+      const assignment = chapter.assignments[assignmentIndex];
+      assignment.title = title || assignment.title;
+      assignment.description = description || assignment.description;
+      assignment.resourceUrl = resourceUrl || assignment.resourceUrl;
+      assignment.dueDate = dueDate || assignment.dueDate;
+
+      await course.save();
+
+      return res.json({ success: true, message: 'Assignment updated successfully', assignment });
+    }
+
+    res.status(405).json({ success: false, message: 'Method not allowed' });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+export const addQuizToChapter = async (req, res) => {
+  try {
+    const { courseId, chapterId, quizType, quizQuestions } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    const chapter = course.courseContent.find(ch => ch.chapterId === chapterId);
+    if (!chapter) return res.status(404).json({ success: false, message: 'Chapter not found' });
+
+    // Replace any existing quiz
+    chapter.quiz = {
+      quizType,
+      quizQuestions: quizType === 'manual' ? quizQuestions : [],
+    };
+
+    await course.save();
+
+    res.json({ success: true, message: 'Quiz added', quiz: chapter.quiz });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+// Get All Quizzes of Educator's Courses
+export const getAllQuizzes = async (req, res) => {
+  try {
+    const educatorId = req.user.id;
+    const courses = await Course.find({ educator: educatorId });
+
+    const quizzes = [];
+
+    courses.forEach(course => {
+      course.courseContent.forEach(chapter => {
+        if (chapter.quiz && chapter.quiz.quizType) {
+          quizzes.push({
+            courseId: course._id.toString(),
+            chapterId: chapter.chapterId,
+            quizType: chapter.quiz.quizType,
+            quizQuestions: chapter.quiz.quizQuestions || []
+          });
+        }
+      });
+    });
+
+    res.json({ success: true, quizzes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update or Delete a Quiz (Unified Controller)
+export const quizController = async (req, res) => {
+  try {
+    const { courseId, chapterId } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    const chapter = course.courseContent.find(ch => ch.chapterId === chapterId);
+    if (!chapter) return res.status(404).json({ success: false, message: 'Chapter not found' });
+
+    if (req.method === 'DELETE') {
+      if (!chapter.quiz) return res.status(404).json({ success: false, message: 'Quiz not found' });
+
+      chapter.quiz = undefined;
+      await course.save();
+      return res.json({ success: true, message: 'Quiz deleted successfully' });
+    }
+
+    if (req.method === 'PUT') {
+      const { quizQuestions, quizType } = req.body;
+      chapter.quiz = {
+        quizType: quizType || chapter.quiz?.quizType || 'manual',
+        quizQuestions: quizQuestions || [],
+        updatedAt: new Date()
+      };
+      await course.save();
+      return res.json({ success: true, message: 'Quiz updated successfully', quiz: chapter.quiz });
+    }
+
+    res.status(405).json({ success: false, message: 'Method not allowed' });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 // Get Educator Courses
 export const getEducatorCourses = async (req, res) => {

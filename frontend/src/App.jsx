@@ -19,6 +19,10 @@ import Login from './pages/auth/Login'
 import SignUp from './pages/auth/SignUp'
 import StudentRoute from './components/ProtectedRoutes/StudentRoute'
 import EducatorRoute from './components/ProtectedRoutes/EducatorRoute'
+import AddAssignments from './pages/educator/AddAssignments'
+import AddQuiz from './pages/educator/AddQuiz'
+import Quiz from './pages/educator/Quiz'
+import Assignments from './pages/educator/Assignments'
 
 const App = () => {
 
@@ -60,8 +64,13 @@ const App = () => {
         >
             {/* <Route path="/educator" element={<Educator/>} > */}
               <Route index element={<Dashboard />} />
-              <Route path="add-course" element={<AddCourse/>} />
-              <Route path="my-courses" element={<MyCourses/>} />
+              <Route path="course" element={<MyCourses/>} />
+              <Route path="course/add" element={<AddCourse/>} />
+              <Route path="assignment" element={<Assignments/>} />
+              <Route path="assignment/add" element={<AddAssignments/>} />
+              <Route path="quiz" element={<Quiz/>} />
+              <Route path="quiz/add" element={<AddQuiz/>} />
+              
               <Route path="students-enrolled" element={<StudentsEnrolled/>} />
             </Route>
           </Routes>

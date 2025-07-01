@@ -6,7 +6,7 @@ import Loading from '../../components/student/Loading';
 
 const MyCourses = () => {
 
-  const { backendUrl, isEducator, currency } = useContext(AppContext)
+  const { backendUrl, isEducator, currency ,navigate } = useContext(AppContext)
 
   const [courses, setCourses] = useState(null)
 
@@ -17,7 +17,7 @@ const MyCourses = () => {
       const token = localStorage.getItem('token');
 
 
-      const { data } = await axios.get(backendUrl + '/api/educator/courses', { headers: { Authorization: `Bearer ${token}` } })
+      const { data } = await axios.get(backendUrl + '/api/educator/course', { headers: { Authorization: `Bearer ${token}` } })
 
       data.success && setCourses(data.courses)
 
@@ -37,7 +37,16 @@ const MyCourses = () => {
 
 <div className="h-screen flex flex-col items-start justify-between md:p-8 md:pb-0 p-4 pt-8 pb-0 ">
       <div className="w-full">
-        <h2 className="pb-4 text-lg font-medium">My Courses</h2>
+        {/* <h2 className="pb-4 text-lg font-medium">Courses</h2> */}
+        <div className="flex items-center justify-between pb-4">
+          <h2 className="text-lg font-medium">Courses</h2>
+          <button
+            onClick={() => navigate("/educator/course/add")}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+          >
+            + Add Course
+          </button>
+        </div>
         <div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20">
           <table className="md:table-auto table-fixed w-full overflow-hidden">
             <thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left">
