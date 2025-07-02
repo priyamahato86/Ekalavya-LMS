@@ -145,7 +145,7 @@ const MyCourses = () => {
                         </button>
                       </div>
                     ) : (
-                      <span className="text-green-700 font-medium text-xs">
+                      <span className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs">
                         Live
                       </span>
                     )}
