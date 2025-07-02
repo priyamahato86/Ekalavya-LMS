@@ -24,6 +24,7 @@ import Quiz from "./pages/educator/Quiz";
 import Assignments from "./pages/educator/Assignments";
 import EditCourse from "./pages/educator/EditCourse";
 import EditAssignment from "./pages/educator/EditAssignment";
+import EditQuiz from "./pages/educator/EditQuiz";
 
 const App = () => {
   const isEducatorRoute = useMatch("/educator/*");
@@ -70,6 +71,8 @@ const App = () => {
           <Route path="assignment/add" element={<AddAssignments />} />
           <Route path="quiz" element={<Quiz />} />
           <Route path="quiz/add" element={<AddQuiz />} />
+          <Route path="quiz/edit/:courseId/:chapterId" element={<EditQuiz />} />
+
           <Route path="course/edit/:id" element={<EditCourse />} />
           <Route
             path="assignment/edit/:courseId/:chapterId/:assignmentId"

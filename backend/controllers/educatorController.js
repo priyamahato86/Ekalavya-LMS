@@ -316,6 +316,37 @@ export const getAllQuizzes = async (req, res) => {
   }
 };
 
+export const getQuizByCourseAndChapter = async (req, res) => {
+  try {
+    const { courseId, chapterId } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+
+    const chapter = course.courseContent.find((ch) => ch.chapterId === chapterId);
+    if (!chapter)
+      return res.status(404).json({ success: false, message: "Chapter not found" });
+
+    if (!chapter.quiz)
+      return res.status(404).json({ success: false, message: "Quiz not found" });
+
+    return res.json({
+      success: true,
+      quiz: {
+        courseId,
+        chapterId,
+        quizType: chapter.quiz.quizType,
+        quizQuestions: chapter.quiz.quizQuestions || [],
+      },
+    });
+  } catch (error) {
+    console.error("Error in getQuizByCourseAndChapter:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 // Update or Delete a Quiz (Unified Controller)
 export const quizController = async (req, res) => {
   try {

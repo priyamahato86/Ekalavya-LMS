@@ -2,25 +2,22 @@ import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useParams } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 
-const AddQuizz = () => {
-  const { backendUrl, isEducator, navigate } = useContext(AppContext);
+const EditQuiz = () => {
+  const { backendUrl, navigate , isEducator } = useContext(AppContext);
+  const {  courseId, chapterId } = useParams();
+
   const [courses, setCourses] = useState([]);
   const [chapters, setChapters] = useState([]);
-  const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [quizzesLoading, setQuizzesLoading] = useState(true);
-  const [quizType, setQuizType] = useState("manual");
-  const [editMode, setEditMode] = useState(false);
-  const [editChapterId, setEditChapterId] = useState("");
-
   const [form, setForm] = useState({
-    courseId: "",
-    chapterId: "",
-    quizType: "manual",
+    courseId: courseId,
+    chapterId: chapterId,
     quizQuestions: [{ question: "", options: ["", "", "", ""], answer: "" }],
   });
+
 
   useEffect(() => {
     if (isEducator) {
@@ -30,38 +27,41 @@ const AddQuizz = () => {
         })
         .then((res) => setCourses(res.data.courses))
         .catch((err) => toast.error(err.message));
-      fetchQuizzes();
     }
   }, [isEducator]);
 
   useEffect(() => {
-    const course = courses.find((c) => c._id === form.courseId);
+    const course = courses.find((c) => c._id === courseId);
     setChapters(course?.courseContent || []);
-  }, [form.courseId, courses]);
+  }, [courseId, courses]);
 
-  const fetchQuizzes = async () => {
-    setQuizzesLoading(true);
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/educator/quiz`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setQuizzes(data.quizzes);
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setQuizzesLoading(false);
+  // Fetch and prefill quiz
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const res = await axios.get(
+          `${backendUrl}/api/educator/quiz/${courseId}/${chapterId}`,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          }
+        );
+        const quiz = res.data.quiz;
+
+        setForm({
+          courseId,
+          chapterId,
+          quizQuestions: quiz.quizQuestions,
+        });
+      } catch (err) {
+        console.log(err);
+        toast.error("Failed to fetch quiz data.");
+      }
+    };
+
+    if (isEducator && courseId && chapterId) {
+      fetchQuiz();
     }
-  };
-
-  const handleAddQuestion = () => {
-    setForm((prev) => ({
-      ...prev,
-      quizQuestions: [
-        ...prev.quizQuestions,
-        { question: "", options: ["", "", "", ""], answer: "" },
-      ],
-    }));
-  };
+  }, [isEducator, courseId, chapterId]);
 
   const handleQuestionChange = (i, field, value, optIndex) => {
     setForm((prev) => {
@@ -75,42 +75,43 @@ const AddQuizz = () => {
     });
   };
 
+  const handleAddQuestion = () => {
+    setForm((prev) => ({
+      ...prev,
+      quizQuestions: [
+        ...prev.quizQuestions,
+        { question: "", options: ["", "", "", ""], answer: "" },
+      ],
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
       !form.courseId ||
       !form.chapterId ||
-      (form.quizType === "manual" &&
-        form.quizQuestions.some(
-          (q) => !q.question || !q.answer || q.options.some((o) => !o)
-        ))
+      form.quizQuestions.some(
+        (q) => !q.question || !q.answer || q.options.some((o) => !o)
+      )
     ) {
       return toast.error("Fill all required fields");
     }
+
     try {
       setLoading(true);
-      const { data } = await axios.post(
-        `${backendUrl}/api/educator/quiz/add`,
+      const res = await axios.put(
+        `${backendUrl}/api/educator/quiz/${courseId}/${chapterId}`,
         form,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-      if (data.success) {
-        toast.success("Quiz added");
-        setForm({
-          courseId: "",
-          chapterId: "",
-          quizType: "manual",
-          quizQuestions: [
-            { question: "", options: ["", "", "", ""], answer: "" },
-          ],
-        });
-        setQuizType("manual");
-        setEditMode(false);
-        fetchQuizzes();
+      if (res.data.success) {
+        toast.success("Quiz updated successfully");
         navigate("/educator/quiz");
-      } else toast.error(data.message);
+      } else {
+        toast.error(res.data.message || "Failed to update quiz");
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -121,11 +122,10 @@ const AddQuizz = () => {
   return (
     <div className="min-h-screen p-4 md:p-8 space-y-6">
       <div className="max-w-4xl bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">
-          {editMode ? "Edit Quiz" : "Add Quiz"}
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">Edit Quiz</h2>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap items-center">
             <select
               value={form.courseId}
               onChange={(e) =>
@@ -135,7 +135,7 @@ const AddQuizz = () => {
                   chapterId: "",
                 }))
               }
-              className="p-2 border rounded flex-1"
+              className="p-2 border rounded flex-1 min-w-[150px]"
             >
               <option value="">Select Course</option>
               {courses.map((c) => (
@@ -144,12 +144,13 @@ const AddQuizz = () => {
                 </option>
               ))}
             </select>
+
             <select
               value={form.chapterId}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, chapterId: e.target.value }))
               }
-              className="p-2 border rounded flex-1"
+              className="p-2 border rounded flex-1 min-w-[150px]"
             >
               <option value="">Select Chapter</option>
               {chapters.map((ch) => (
@@ -158,6 +159,7 @@ const AddQuizz = () => {
                 </option>
               ))}
             </select>
+
             <button
               type="button"
               className="flex items-center gap-2 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors"
@@ -203,6 +205,7 @@ const AddQuizz = () => {
               />
             </div>
           ))}
+
           <button
             type="button"
             onClick={handleAddQuestion}
@@ -216,13 +219,7 @@ const AddQuizz = () => {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded"
           >
-            {loading
-              ? editMode
-                ? "Updating..."
-                : "Saving..."
-              : editMode
-              ? "Update Quiz"
-              : "Create Quiz"}
+            {loading ? "Updating..." : "Update Quiz"}
           </button>
         </form>
       </div>
@@ -230,4 +227,4 @@ const AddQuizz = () => {
   );
 };
 
-export default AddQuizz;
+export default EditQuiz;

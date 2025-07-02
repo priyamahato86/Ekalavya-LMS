@@ -14,7 +14,8 @@ import {
   publishCourse,
   deleteCourse,
   updateCourse,
-  getSingleCourse
+  getSingleCourse,
+  getQuizByCourseAndChapter
 } from "../controllers/educatorController.js";
 import upload from "../configs/multer.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -61,6 +62,12 @@ educatorRouter
 // Add Quizz
 educatorRouter.post("/quiz/add", requireEducator, addQuizToChapter);
 educatorRouter.get("/quiz", requireEducator, getAllQuizzes);
+educatorRouter.get(
+  "/quiz/:courseId/:chapterId",
+  requireEducator,
+  getQuizByCourseAndChapter
+);
+
 educatorRouter
   .route("/quiz/:courseId/:chapterId")
   .put(requireEducator, quizController)

@@ -86,8 +86,8 @@ const Quiz = () => {
           </button>
         </div>
 
-        <div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20">
-          <table className="md:table-auto table-fixed w-full overflow-hidden">
+        <div className="flex flex-col items-center max-w-4xl w-full overflow-x-auto rounded-md bg-white border border-gray-500/20">
+          <table className="min-w-[600px] table-auto w-full text-sm">
             <thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left">
               <tr>
                 <th className="px-4 py-3 font-semibold truncate">Course</th>
@@ -110,19 +110,21 @@ const Quiz = () => {
                   <td className="px-4 py-3 truncate">
                     {new Date(q.updatedAt || new Date()).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3 truncate space-x-2">
+                  <td className="px-4 py-3 truncate">
+                    <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => handleEditQuiz(q)}
-                      className="text-green-600 hover:underline"
+                      onClick={() => navigate(`/educator/quiz/edit/${q.courseId}/${q.chapterId}`)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-xs"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDeleteQuiz(q.courseId, q.chapterId)}
-                      className="text-red-600 hover:underline"
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
                     >
                       Delete
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}
