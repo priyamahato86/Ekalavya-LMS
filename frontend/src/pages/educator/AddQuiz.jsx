@@ -19,7 +19,7 @@ const AddQuizz = () => {
     courseId: "",
     chapterId: "",
     quizType: "manual",
-    quizQuestions: [{ question: "", options: ["", "", "", ""], answer: "" }],
+    quizQuestions: [{ question: "", options: ["", "", "", ""], correctAnswer: "" }],
   });
 
   useEffect(() => {
@@ -58,7 +58,7 @@ const AddQuizz = () => {
       ...prev,
       quizQuestions: [
         ...prev.quizQuestions,
-        { question: "", options: ["", "", "", ""], answer: "" },
+        { question: "", options: ["", "", "", ""], correctAnswer: "" },
       ],
     }));
   };
@@ -82,18 +82,19 @@ const AddQuizz = () => {
       !form.chapterId ||
       (form.quizType === "manual" &&
         form.quizQuestions.some(
-          (q) => !q.question || !q.answer || q.options.some((o) => !o)
+          (q) => !q.question || !q.correctAnswer || q.options.some((o) => !o)
         ))
     ) {
       return toast.error("Fill all required fields");
     }
     try {
       setLoading(true);
+      const token = localStorage.getItem("token");
       const { data } = await axios.post(
         `${backendUrl}/api/educator/quiz/add`,
         form,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       if (data.success) {
@@ -103,7 +104,7 @@ const AddQuizz = () => {
           chapterId: "",
           quizType: "manual",
           quizQuestions: [
-            { question: "", options: ["", "", "", ""], answer: "" },
+            { question: "", options: ["", "", "", ""], correctAnswer: "" },
           ],
         });
         setQuizType("manual");
@@ -194,9 +195,9 @@ const AddQuizz = () => {
               </div>
               <input
                 type="text"
-                value={q.answer}
+                value={q.correctAnswer}
                 onChange={(e) =>
-                  handleQuestionChange(i, "answer", e.target.value)
+                  handleQuestionChange(i, "correctAnswer", e.target.value)
                 }
                 placeholder="Correct answer"
                 className="p-2 border rounded w-full"

@@ -3,6 +3,7 @@ import { useContext, useState, useEffect } from "react";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { Pencil, Trash2 } from "lucide-react";
 
 const Assignments = () => {
   const [assignmentsLoading, setAssignmentsLoading] = useState(true);
@@ -36,8 +37,20 @@ const Assignments = () => {
       setAssignmentsLoading(false);
     }
   };
+  const fetchCourses = async () => {
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/educator/course`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setCourses(data.courses);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   useEffect(() => {
     if (isEducator) fetchAssignments();
+    fetchCourses();
   }, [isEducator]);
 
   const handleDelete = async (courseId, chapterId, assignmentId) => {
@@ -92,11 +105,13 @@ const Assignments = () => {
                   className="border-b border-gray-500/20"
                 >
                   <td className="px-4 py-3 truncate">
-                    {courses.find((c) => c._id === a.courseId)?.courseTitle ||
-                      a.courseId}
+                    {courses.find((c) => String(c._id) === String(a.courseId))
+                      ?.courseTitle || a.courseId}
                   </td>
                   <td className="px-4 py-3 truncate">
-                    {chapters.find((ch) => ch.chapterId === a.chapterId)
+                    {courses
+                      .find((c) => String(c._id) === String(a.courseId))
+                      ?.courseContent.find((ch) => ch.chapterId === a.chapterId)
                       ?.chapterTitle || a.chapterId}
                   </td>
                   <td className="px-4 py-3 truncate">{a.title}</td>
@@ -105,24 +120,24 @@ const Assignments = () => {
                   </td>
                   <td className="px-4 py-3 truncate ">
                     <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/educator/assignment/edit/${a.courseId}/${a.chapterId}/${a.assignmentId}`
-                        )
-                      }
-                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-xs"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleDelete(a.courseId, a.chapterId, a.assignmentId)
-                      }
-                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
-                    >
-                      Delete
-                    </button>
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/educator/assignment/edit/${a.courseId}/${a.chapterId}/${a.assignmentId}`
+                          )
+                        }
+                        className="text-yellow-500 hover:text-yellow-600"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDelete(a.courseId, a.chapterId, a.assignmentId)
+                        }
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>

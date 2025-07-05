@@ -96,7 +96,7 @@ const quizQuestionSchema = new mongoose.Schema(
   {
     question: { type: String, required: true },
     options: [{ type: String, required: true }],
-    answer: { type: String, required: true },
+    correctAnswer: { type: String, required: true },
   },
   { _id: false }
 );
@@ -138,7 +138,7 @@ const courseSchema = new mongoose.Schema(
     discount: { type: Number, required: true, min: 0, max: 100 },
     courseContent: [chapterSchema],
     educator: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -150,7 +150,7 @@ const courseSchema = new mongoose.Schema(
     ],
     enrolledStudents: [
       {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
     ],

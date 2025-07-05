@@ -3,6 +3,7 @@ import { AppContext } from "../../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Loading from "../../components/student/Loading";
+import { Pencil, Trash2 } from "lucide-react";
 
 const MyCourses = () => {
   const { backendUrl, isEducator, currency, navigate } = useContext(AppContext);
@@ -133,15 +134,15 @@ const MyCourses = () => {
                         </button>
                         <button
                           onClick={() => navigate(`/educator/course/edit/${course._id}`)}
-                          className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-xs"
+                          className="text-yellow-500 hover:text-yellow-600"
                         >
-                          Edit
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(course._id)}
-                          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
+                          className="text-red-600 hover:text-red-700"
                         >
-                          Delete
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
