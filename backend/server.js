@@ -19,8 +19,12 @@ await connectCloudinary();
 // Middlewares
 app.use(cors());
 //app.use(clerkMiddleware())
-app.post("/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
-
+//app.post("/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
+app.post(
+  "/api/webhook/stripe", // ✅ use consistent route
+  express.raw({ type: "application/json" }),
+  stripeWebhooks
+);
 app.use(express.json());
 // Routes
 app.get("/", (req, res) => res.send("API Working"));

@@ -84,30 +84,60 @@ export const stripeWebhooks = async (request, response) => {
 
   // Handle the event
   switch (event.type) {
-    case 'payment_intent.succeeded': {
+    // case 'payment_intent.succeeded': {
 
-      const paymentIntent = event.data.object;
-      const paymentIntentId = paymentIntent.id;
+    //   const paymentIntent = event.data.object;
+    //   const paymentIntentId = paymentIntent.id;
 
-      // Getting Session Metadata
-      const session = await stripeInstance.checkout.sessions.list({
-        payment_intent: paymentIntentId,
-      });
+    //   // Getting Session Metadata
+    //   const session = await stripeInstance.checkout.sessions.list({
+    //     payment_intent: paymentIntentId,
+    //   });
 
-      const { purchaseId } = session.data[0].metadata;
+    //   const { purchaseId } = session.data[0].metadata;
 
-      const purchaseData = await Purchase.findById(purchaseId)
-      const userData = await User.findById(purchaseData.userId)
-      const courseData = await Course.findById(purchaseData.courseId.toString())
+    //   const purchaseData = await Purchase.findById(purchaseId)
+    //   const userData = await User.findById(purchaseData.userId)
+    //   const courseData = await Course.findById(purchaseData.courseId.toString())
 
-      courseData.enrolledStudents.push(userData)
-      await courseData.save()
+    //   courseData.enrolledStudents.push(userData)
+    //   await courseData.save()
 
-      userData.enrolledCourses.push(courseData._id)
-      await userData.save()
+    //   userData.enrolledCourses.push(courseData._id)
+    //   await userData.save()
 
-      purchaseData.status = 'completed'
-      await purchaseData.save()
+    //   purchaseData.status = 'completed'
+    //   await purchaseData.save()
+
+    //   break;
+    // }
+
+    case 'checkout.session.completed': {
+        console.log(" Stripe webhook received: checkout.session.completed");
+      const session = event.data.object;
+      const { purchaseId } = session.metadata;
+
+      const purchaseData = await Purchase.findById(purchaseId);
+      if (!purchaseData) return res.status(400).json({ error: "Purchase not found" });
+
+      const userData = await User.findById(purchaseData.userId);
+      const courseData = await Course.findById(purchaseData.courseId);
+
+      if (!userData || !courseData) return res.status(400).json({ error: "User or Course not found" });
+
+      // Avoid duplicates
+      if (!userData.enrolledCourses.includes(courseData._id)) {
+        userData.enrolledCourses.push(courseData._id);
+        await userData.save();
+      }
+
+      if (!courseData.enrolledStudents.includes(userData._id)) {
+        courseData.enrolledStudents.push(userData._id);
+        await courseData.save();
+      }
+
+      purchaseData.status = 'completed';
+      await purchaseData.save();
 
       break;
     }

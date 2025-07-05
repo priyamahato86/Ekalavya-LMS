@@ -37,6 +37,8 @@ const MyEnrollments = () => {
         }
     };
 
+    
+
     useEffect(() => {
         if (userData) {
             fetchUserEnrolledCourses()

@@ -85,6 +85,7 @@ export const AppContextProvider = (props) => {
 
   const fetchUserEnrolledCourses = async () => {
     try {
+       const token = localStorage.getItem('token');
       const { data } = await axios.get(
         `${backendUrl}/api/user/enrolled-courses`,
         {
@@ -93,6 +94,7 @@ export const AppContextProvider = (props) => {
       );
       if (data.success) {
         setEnrolledCourses(data.enrolledCourses.reverse());
+        console.log("Fetched enrolled courses:", data.enrolledCourses);
       } else toast.error(data.message);
     } catch (error) {
       toast.error(error.message);
