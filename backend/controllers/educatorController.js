@@ -3,6 +3,7 @@ import Course from '../models/Course.js';
 import { Purchase } from '../models/Purchase.js';
 import User from '../models/User.js';
 import mongoose from 'mongoose';
+import axios from 'axios';
 //import { clerkClient } from '@clerk/express'
 
 // update role to educator
@@ -483,4 +484,92 @@ export const getEnrolledStudentsData = async (req, res) => {
             message: error.message
         });
     }
+};
+
+export const generateQuizWithAI = async (req, res) => {
+  const { courseId, chapterId, difficulty = "medium" } = req.body;
+
+  try {
+    const course = await Course.findById(courseId);
+    const chapter = course?.courseContent.find(ch => ch.chapterId === chapterId);
+
+    if (!course || !chapter) {
+      return res.status(400).json({ success: false, message: "Invalid course or chapter ID" });
+    }
+
+    const prompt = `Generate a quiz for the course '${course.courseTitle}', module '${chapter.chapterTitle}', difficulty level '${difficulty}'.`;
+
+    const data = JSON.stringify({
+      system_instruction: {
+        parts: [
+          {
+            text:
+              "You are a quiz generation AI. Your task is to create a quiz consisting of 10 questions based on the provided course name and module name. " +
+              "Optionally, you may also receive a difficulty level. Each question should be formatted as follows: " +
+              "[{\"question\": \"string\", \"options\": [\"string1\", \"string2\", \"string3\", \"string4\"], \"answer\": number}]. " +
+              "The answer key is index of the correct option (0-based)"
+          }
+        ]
+      },
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              question: { type: "STRING" },
+              options: {
+                type: "ARRAY",
+                items: { type: "STRING" }
+              },
+              answer: { type: "NUMBER" }
+            },
+            propertyOrdering: ["question", "options", "answer"]
+          }
+        }
+      }
+    });
+
+    const config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      headers: {
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      data: data
+    };
+
+    const response = await axios.request(config);
+    const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    let quizData;
+    try {
+      quizData = JSON.parse(raw);
+    } catch (err) {
+      return res.status(500).json({ success: false, message: "Invalid JSON returned by AI" });
+    }
+
+    const quizQuestions = quizData.map(q => ({
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.options[q.answer]
+    }));
+
+    return res.json({ success: true, quizQuestions });
+  } catch (err) {
+    console.error("AI quiz generation failed:", err);
+    res.status(500).json({ success: false, message: "AI quiz generation failed" });
+  }
 };

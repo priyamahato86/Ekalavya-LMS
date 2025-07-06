@@ -15,7 +15,8 @@ import {
   deleteCourse,
   updateCourse,
   getSingleCourse,
-  getQuizByCourseAndChapter
+  getQuizByCourseAndChapter,
+  generateQuizWithAI
 } from "../controllers/educatorController.js";
 import upload from "../configs/multer.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -72,6 +73,9 @@ educatorRouter
   .route("/quiz/:courseId/:chapterId")
   .put(requireEducator, quizController)
   .delete(requireEducator, quizController);
+
+  educatorRouter.post("/quiz/generate-ai", requireEducator, generateQuizWithAI);
+
 
 
 
