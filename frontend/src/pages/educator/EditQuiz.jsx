@@ -68,6 +68,9 @@ const EditQuiz = () => {
       const questions = [...prev.quizQuestions];
       if (field === "option") {
         questions[i].options[optIndex] = value;
+        if (questions[i].correctAnswer === questions[i].options[optIndex]) {
+          questions[i].correctAnswer = value;
+         }
       } else {
         questions[i][field] = value;
       }
@@ -182,8 +185,19 @@ const EditQuiz = () => {
               />
               <div className="space-y-2">
                 {q.options.map((opt, j) => (
-                  <input
+                  <label
                     key={j}
+                    className="flex items-center gap-2 p-2 border rounded w-full"
+                  >
+                    <input
+                      type="radio"
+                      name={`correct-${i}`}
+                      checked={q.correctAnswer === opt}
+                      onChange={() =>
+                        handleQuestionChange(i, "correctAnswer", opt)
+                      }
+                    />
+                  <input
                     type="text"
                     value={opt}
                     onChange={(e) =>
@@ -192,17 +206,9 @@ const EditQuiz = () => {
                     placeholder={`Option ${j + 1}`}
                     className="p-2 border rounded w-full"
                   />
+                  </label>
                 ))}
               </div>
-              <input
-                type="text"
-                value={q.answer}
-                onChange={(e) =>
-                  handleQuestionChange(i, "answer", e.target.value)
-                }
-                placeholder="Correct answer"
-                className="p-2 border rounded w-full"
-              />
             </div>
           ))}
 
