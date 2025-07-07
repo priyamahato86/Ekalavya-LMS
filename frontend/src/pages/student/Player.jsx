@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState, useRef } from "react";
 import { AppContext } from "../../context/AppContext";
 import YouTube from "react-youtube";
-import { assets } from "../../assets/assets";
 import { useParams } from "react-router-dom";
 import humanizeDuration from "humanize-duration";
 import axios from "axios";
@@ -17,16 +16,12 @@ import {
   Play,
   Award,
   Download,
+  Cloud,
 } from "lucide-react";
 
 const Player = () => {
-  const {
-    enrolledCourses,
-    backendUrl,
-    calculateChapterTime,
-    userData,
-    fetchUserEnrolledCourses,
-  } = useContext(AppContext);
+  const { enrolledCourses, backendUrl, userData, fetchUserEnrolledCourses } =
+    useContext(AppContext);
 
   const { courseId } = useParams();
   const [courseData, setCourseData] = useState(null);
@@ -34,8 +29,10 @@ const Player = () => {
   const [openSections, setOpenSections] = useState({});
   const [selectedContent, setSelectedContent] = useState(null);
   const [contentType, setContentType] = useState("");
-  //const [playerData, setPlayerData] = useState(null);
   const [initialRating, setInitialRating] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [mySubmissions, setMySubmissions] = useState([]);
 
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -43,8 +40,6 @@ const Player = () => {
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
-  // const [selectedOption, setSelectedOption] = useState('');
-  // const [score, setScore] = useState(0);
   const fileInputRef = useRef(null);
 
   const getCourseData = () => {
@@ -66,17 +61,19 @@ const Player = () => {
     setOpenSections((prev) => ({ ...prev, [index]: !prev[index] }));
   };
   const selectContent = (content, type) => {
-    if (type === 'quiz' && !content.id) {
-    content.id = `${content.title}-${Math.random().toString(36).substr(2, 9)}`; // Generate fallback id if missing
-  }
+    if (type === "quiz" && !content.id) {
+      content.id = `${content.title}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`; // Generate fallback id if missing
+    }
     setSelectedContent(content);
     setContentType(type);
     if (type === "quiz") {
-       const questions = content.quizQuestions || content.questions || [];
+      const questions = content.quizQuestions || content.questions || [];
       setActiveQuiz({
-      ...content,
-      quizQuestions: questions , // normalize
-    });
+        ...content,
+        quizQuestions: questions, // normalize
+      });
       setCurrentQuestionIndex(0);
       setQuizCompleted(false);
       setQuizScore(0);
@@ -166,35 +163,123 @@ const Player = () => {
     return <p className="text-gray-500">Unsupported lecture format</p>;
   };
 
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "assignment_upload"); // replace with your preset
+
+    const response = await axios.post(
+      "https://api.cloudinary.com/v1_1/demqrjawq/auto/upload", // replace with your Cloudinary name
+      formData
+    );
+
+    return response.data.secure_url; // Cloudinary file URL
+  };
+
+  // const handleFileUpload = async (assignmentId, file) => {
+  //   try {
+  //     const fileUrl = await uploadToCloudinary(file);
+  //     const token = localStorage.getItem("token");
+  //     const { data } = await axios.post(
+  //       `${backendUrl}/api/user/submit-assignment`,
+  //      {
+  //        courseId,
+  //       assignmentId,
+  //       assignmentTitle: selectedContent.title,
+  //       chapterId: selectedContent.chapterId, // Optional: add if available
+  //       submissionFileUrl: fileUrl,
+  //      },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+
+  //     if (data.success) {
+  //       toast.success("Assignment submitted successfully");
+  //       // Optionally refresh user progress
+  //       getCourseProgress();
+  //     } else {
+  //       toast.error(data.message);
+  //     }
+  //   } catch (err) {
+  //     toast.error("Upload failed. Try again.");
+  //     console.error(err);
+  //   }
+  // };
+
   const handleFileUpload = async (assignmentId, file) => {
     try {
-      const formData = new FormData();
-      formData.append("assignment", file);
-      formData.append("assignmentId", assignmentId);
-      formData.append("courseId", courseId);
-
+      const fileUrl = await uploadToCloudinary(file);
       const token = localStorage.getItem("token");
-      const { data } = await axios.post(
-        `${backendUrl}/api/user/submit-assignment`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
+
+      const mySubmission = mySubmissions.find(
+        (s) => s.assignmentId === assignmentId
       );
 
+      const endpoint = mySubmission
+        ? `${backendUrl}/api/user/edit-submission/${mySubmission._id}`
+        : `${backendUrl}/api/user/submit-assignment`;
+
+      const method = mySubmission ? "put" : "post";
+      const body = mySubmission
+        ? { submissionFileUrl: fileUrl }
+        : {
+            courseId,
+            assignmentId,
+            assignmentTitle: selectedContent.title,
+            chapterId: selectedContent.chapterId,
+            submissionFileUrl: fileUrl,
+          };
+
+      const { data } = await axios[method](endpoint, body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       if (data.success) {
-        toast.success("Assignment submitted successfully");
-        // Optionally refresh user progress
+        toast.success(
+          mySubmission ? "Assignment updated" : "Assignment submitted"
+        );
         getCourseProgress();
+        fetchMySubmissions();
       } else {
         toast.error(data.message);
       }
     } catch (err) {
       toast.error("Upload failed. Try again.");
       console.error(err);
+    }
+  };
+
+  const fetchMySubmissions = async () => {
+    const token = localStorage.getItem("token");
+    const { data } = await axios.get(
+      `${backendUrl}/api/user/my-submissions/${courseId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    if (data.success) setMySubmissions(data.submissions);
+  };
+
+  useEffect(() => {
+    if (courseData) fetchMySubmissions();
+  }, [courseData]);
+
+  const handleDeleteSubmission = async (submissionId) => {
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(
+        `${backendUrl}/api/user/delete-submission/${submissionId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      toast.success("Submission deleted");
+      fetchMySubmissions();
+    } catch (err) {
+      toast.error("Failed to delete");
     }
   };
 
@@ -330,9 +415,10 @@ const Player = () => {
 
                         {/* Quiz */}
                         {chapter.quiz?.quizQuestions?.length > 0 && (
-                          
                           <div
-                           key={`quiz-${chapter.quiz.id || chapter.quiz.title || index}`}
+                            key={`quiz-${
+                              chapter.quiz.id || chapter.quiz.title || index
+                            }`}
                             className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer ${
                               selectedContent?.id === chapter.quiz.id
                                 ? "bg-purple-50 border border-purple-200"
@@ -375,12 +461,9 @@ const Player = () => {
                   <h2 className="text-2xl font-bold mb-2">
                     {selectedContent.lectureTitle}
                   </h2>
-                  {/* <div className="bg-black aspect-video rounded-lg mb-6 flex items-center justify-center">
-                    <Play className="h-12 w-12 text-white" />
-                  </div> */}
                   <div className="mb-6">
-      {renderLectureContent(selectedContent)}
-    </div>
+                    {renderLectureContent(selectedContent)}
+                  </div>
                   <button
                     onClick={() =>
                       markLectureAsCompleted(selectedContent.lectureId)
@@ -421,22 +504,91 @@ const Player = () => {
                       View Resource
                     </a>
                   )}
-                  <div className="mt-6">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleFileUpload(selectedContent.id, file);
-                      }}
-                    />
-                    <button
+                  <div className="mt-6 border border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 relative">
+                    <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                      className="cursor-pointer text-center space-y-2 p-4 border border-gray-300 rounded-lg hover:bg-gray-100"
                     >
-                      Upload Assignment
-                    </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setUploading(true);
+                            setUploadedFile(file);
+                            handleFileUpload(
+                              selectedContent.assignmentId,
+                              file
+                            ).finally(() => {
+                              setUploading(false);
+                            });
+                          }
+                        }}
+                      />
+
+                      <Cloud className="mx-auto h-6 w-6 text-blue-500" />
+                      <p className="text-gray-700 font-medium">Upload files</p>
+                      <p className="text-sm text-gray-500">
+                        Choose a file or drag & drop it here <br />
+                        (JPEG, PNG, PDF, MP4 - up to 50MB)
+                      </p>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                      >
+                        Browse File
+                      </button>
+                    </div>
+
+                    {uploading && (
+                      <div className="mt-4 text-sm text-blue-600">
+                        Uploading...
+                      </div>
+                    )}
+
+                    {mySubmissions &&
+                      selectedContent?.assignmentId &&
+                      (() => {
+                        const submission = mySubmissions.find(
+                          (s) => s.assignmentId === selectedContent.assignmentId
+                        );
+                        return submission ? (
+                          <div className="mt-6 bg-white p-4 border rounded shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">
+                                  {submission.assignmentTitle}
+                                </p>
+                                <a
+                                  href={submission.submissionFileUrl}
+                                  target="_blank"
+                                  className="text-blue-600 text-xs underline"
+                                >
+                                  View Submitted File
+                                </a>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="text-sm bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleDeleteSubmission(submission._id)
+                                  }
+                                  className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
                   </div>
                 </>
               ) : contentType === "quiz" && activeQuiz ? (

@@ -2,6 +2,7 @@ import Course from "../models/Course.js";
 import { CourseProgress } from "../models/CourseProgress.js";
 import { Purchase } from "../models/Purchase.js";
 import User from "../models/User.js";
+import AssignmentSubmission from "../models/AssignmentSubmission.js";
 import stripe from "stripe";
 
 // Get User Data
@@ -191,5 +192,120 @@ export const addUserRating = async (req, res) => {
     return res.json({ success: true, message: "Rating added" });
   } catch (error) {
     return res.json({ success: false, message: error.message });
+  }
+};
+
+export const submitAssignment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    const {
+      courseId,
+      assignmentId,
+      assignmentTitle,
+      submissionFileUrl,
+    } = req.body;
+
+    if (
+      !courseId ||
+      !assignmentId ||
+      !assignmentTitle ||
+      !submissionFileUrl
+    ) {
+      return res.json({ success: false, message: "Missing required fields" });
+    }
+
+    // Check if user is enrolled in the course
+    if (!user.enrolledCourses.includes(courseId)) {
+      return res.json({
+        success: false,
+        message: "You are not enrolled in this course",
+      });
+    }
+
+    // Optional: prevent duplicate submissions
+    const existing = await AssignmentSubmission.findOne({
+      studentId: userId,
+      assignmentId,
+    });
+
+    if (existing) {
+      return res.json({
+        success: false,
+        message: "You have already submitted this assignment",
+      });
+    }
+
+    const submission = await AssignmentSubmission.create({
+      studentId: userId,
+      studentName: user.name,
+      courseId,
+      assignmentId,
+      assignmentTitle,
+      submissionFileUrl,
+       submittedAt: new Date(),
+    });
+
+    res.json({ success: true, message: "Assignment submitted", submission });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/user/my-submissions/:courseId
+export const getUserSubmissions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { courseId } = req.params;
+
+    const submissions = await AssignmentSubmission.find({
+      studentId: userId,
+      courseId,
+    });
+
+    res.json({ success: true, submissions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE /api/user/delete-submission/:id
+export const deleteSubmission = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const submission = await AssignmentSubmission.findById(id);
+
+    if (!submission || submission.studentId.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    await AssignmentSubmission.findByIdAndDelete(id);
+    res.json({ success: true, message: "Submission deleted" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// PUT /api/user/edit-submission/:id
+export const editSubmission = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { submissionFileUrl } = req.body;
+
+    const submission = await AssignmentSubmission.findById(id);
+    if (!submission || submission.studentId.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    submission.submissionFileUrl = submissionFileUrl;
+    await submission.save();
+
+    res.json({ success: true, message: "Submission updated", submission });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

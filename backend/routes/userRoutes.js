@@ -6,6 +6,10 @@ import {
   purchaseCourse,
   updateUserCourseProgress,
   userEnrolledCourses,
+  submitAssignment,
+  getUserSubmissions,
+  deleteSubmission,
+  editSubmission
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 
@@ -19,5 +23,8 @@ userRouter.get("/enrolled-courses", userEnrolledCourses);
 userRouter.post("/update-course-progress", updateUserCourseProgress);
 userRouter.post("/get-course-progress", getUserCourseProgress);
 userRouter.post("/add-rating", addUserRating);
-
+userRouter.post("/submit-assignment", submitAssignment);
+userRouter.get("/my-submissions/:courseId", getUserSubmissions);
+userRouter.delete("/delete-submission/:id", deleteSubmission);
+userRouter.put("/edit-submission/:id", editSubmission);
 export default userRouter;

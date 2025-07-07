@@ -2,13 +2,13 @@ import { useContext } from "react";
 import { NavLink } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { AppContext } from "../../context/AppContext";
-import { NotebookPen, Shapes } from "lucide-react";
+import { NotebookPen, Shapes, FileCheck,UserRoundCheck,SquarePlus } from "lucide-react";
 
 const Sidebar = () => {
   const { isEducator } = useContext(AppContext);
   const menuItems = [
     { name: "Dashboard", path: "/educator", icon: assets.home_icon },
-    { name: "Course", path: "/educator/course", icon: assets.add_icon },
+    { name: "Course", path: "/educator/course", icon: <SquarePlus /> },
     {
       name: "Assignments",
       path: "/educator/assignment",
@@ -18,7 +18,12 @@ const Sidebar = () => {
     {
       name: "Students Enrolled",
       path: "/educator/students-enrolled",
-      icon: assets.person_tick_icon,
+      icon: <UserRoundCheck />,
+    },
+    {
+      name: "Submitted ",
+      path: "/educator/submitted-assignments",
+      icon: <FileCheck />,
     },
   ];
   return (

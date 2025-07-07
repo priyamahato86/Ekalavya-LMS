@@ -25,6 +25,7 @@ import Assignments from "./pages/educator/Assignments";
 import EditCourse from "./pages/educator/EditCourse";
 import EditAssignment from "./pages/educator/EditAssignment";
 import EditQuiz from "./pages/educator/EditQuiz";
+import Submitted from "./pages/educator/Submitted";
 
 const App = () => {
   const isEducatorRoute = useMatch("/educator/*");
@@ -80,6 +81,7 @@ const App = () => {
           />
 
           <Route path="students-enrolled" element={<StudentsEnrolled />} />
+          <Route path="submitted-assignments" element={<Submitted />} />
         </Route>
       </Routes>
     </div>
