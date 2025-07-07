@@ -2,6 +2,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import Course from '../models/Course.js';
 import { Purchase } from '../models/Purchase.js';
 import User from '../models/User.js';
+import AssignmentSubmission from "../models/AssignmentSubmission.js";
 import mongoose from 'mongoose';
 import axios from 'axios';
 //import { clerkClient } from '@clerk/express'
@@ -42,41 +43,6 @@ export const updateRoleToEducator = async (req, res) => {
 }
 
 
-// Add New Course
-// export const addCourse = async (req, res) => {
-
-//     try {
-
-//         const { courseData } = req.body
-
-//         const imageFile = req.file
-
-//         const educatorId = req.auth.userId
-
-//         if (!imageFile) {
-//             return res.json({ success: false, message: 'Thumbnail Not Attached' })
-//         }
-
-//         const parsedCourseData = await JSON.parse(courseData)
-
-//         parsedCourseData.educator = educatorId
-
-//         const newCourse = await Course.create(parsedCourseData)
-
-//         const imageUpload = await cloudinary.uploader.upload(imageFile.path)
-
-//         newCourse.courseThumbnail = imageUpload.secure_url
-
-//         await newCourse.save()
-
-//         res.json({ success: true, message: 'Course Added' })
-
-//     } catch (error) {
-
-//         res.json({ success: false, message: error.message })
-
-//     }
-// }
 export const addCourse = async (req, res) => {
     try {
         const { courseData } = req.body;
@@ -571,5 +537,48 @@ export const generateQuizWithAI = async (req, res) => {
   } catch (err) {
     console.error("AI quiz generation failed:", err);
     res.status(500).json({ success: false, message: "AI quiz generation failed" });
+  }
+};
+
+export const getAssignmentSubmissions = async (req, res) => {
+  try {
+    const educatorId = req.user.id;
+
+    // Find courses created by this educator
+    const courses = await Course.find({ educator: educatorId });
+
+    const courseIds = courses.map((course) => course._id);
+
+    // Fetch all assignment submissions related to these courses
+    const submissions = await AssignmentSubmission.find({
+      courseId: { $in: courseIds },
+    }).sort({ submittedAt: -1 });
+
+    res.json({ success: true, submissions });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Error fetching submissions", error });
+  }
+};
+
+// Mark an assignment submission as reviewed
+export const markSubmissionReviewed = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+
+    const updatedSubmission = await AssignmentSubmission.findByIdAndUpdate(
+      submissionId,
+      { reviewed: true },
+      { new: true }
+    );
+
+    if (!updatedSubmission) {
+      return res.status(404).json({ success: false, message: "Submission not found" });
+    }
+
+    res.json({ success: true, message: "Marked as reviewed", updatedSubmission });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

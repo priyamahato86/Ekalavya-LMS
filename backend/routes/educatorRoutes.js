@@ -16,7 +16,9 @@ import {
   updateCourse,
   getSingleCourse,
   getQuizByCourseAndChapter,
-  generateQuizWithAI
+  generateQuizWithAI,
+  getAssignmentSubmissions,
+  markSubmissionReviewed
 } from "../controllers/educatorController.js";
 import upload from "../configs/multer.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -87,6 +89,13 @@ educatorRouter.get(
   "/enrolled-students",
   requireEducator,
   getEnrolledStudentsData
+);
+
+educatorRouter.get("/assignment-submissions", requireEducator, getAssignmentSubmissions);
+educatorRouter.put(
+  "/assignment-submissions/:submissionId/review",
+  requireEducator,
+  markSubmissionReviewed
 );
 
 export default educatorRouter;

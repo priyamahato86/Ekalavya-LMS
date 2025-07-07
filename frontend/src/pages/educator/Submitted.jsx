@@ -15,7 +15,7 @@ const SubmittedAssignments = () => {
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(
+      const { data } = await axios.get( 
         `${backendUrl}/api/educator/assignment-submissions`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -80,7 +80,6 @@ const SubmittedAssignments = () => {
               <tr>
                 <th className="px-4 py-3 font-semibold truncate">Student</th>
                 <th className="px-4 py-3 font-semibold truncate">Course</th>
-                <th className="px-4 py-3 font-semibold truncate">Chapter</th>
                 <th className="px-4 py-3 font-semibold truncate">Title</th>
                 <th className="px-4 py-3 font-semibold truncate">Submitted At</th>
                 <th className="px-4 py-3 font-semibold truncate">Status</th>
@@ -90,13 +89,12 @@ const SubmittedAssignments = () => {
             <tbody className="text-sm text-gray-500">
               {submissions.map((s) => {
                 const course = courses.find((c) => c._id === s.courseId);
-                const chapter = course?.courseContent.find((ch) => ch.chapterId === s.chapterId);
+                
 
                 return (
                   <tr key={s._id} className="border-b border-gray-500/20">
                     <td className="px-4 py-3 truncate">{s.studentName || s.studentId}</td>
                     <td className="px-4 py-3 truncate">{course?.courseTitle || s.courseId}</td>
-                    <td className="px-4 py-3 truncate">{chapter?.chapterTitle || s.chapterId}</td>
                     <td className="px-4 py-3 truncate">{s.assignmentTitle}</td>
                     <td className="px-4 py-3 truncate">{new Date(s.submittedAt).toLocaleString()}</td>
                     <td className="px-4 py-3 truncate">
