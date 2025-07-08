@@ -36,6 +36,14 @@ const assignmentSubmissionSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  grade: {
+    type: String,
+    default: "",
+  },
+  feedback: {
+    type: String,
+    default: "",
+  },
 }, { timestamps: true });
 
 export default mongoose.model("AssignmentSubmission", assignmentSubmissionSchema);

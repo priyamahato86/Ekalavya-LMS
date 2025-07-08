@@ -562,14 +562,20 @@ export const getAssignmentSubmissions = async (req, res) => {
   }
 };
 
-// Mark an assignment submission as reviewed
-export const markSubmissionReviewed = async (req, res) => {
+
+
+export const reviewAndGradeSubmission = async (req, res) => {
   try {
     const { submissionId } = req.params;
+    const { grade, feedback } = req.body;
 
     const updatedSubmission = await AssignmentSubmission.findByIdAndUpdate(
       submissionId,
-      { reviewed: true },
+      {
+        reviewed: true,
+        grade,
+        feedback,
+      },
       { new: true }
     );
 
@@ -577,7 +583,11 @@ export const markSubmissionReviewed = async (req, res) => {
       return res.status(404).json({ success: false, message: "Submission not found" });
     }
 
-    res.json({ success: true, message: "Marked as reviewed", updatedSubmission });
+    res.json({
+      success: true,
+      message: "Submission reviewed and graded",
+      updatedSubmission,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

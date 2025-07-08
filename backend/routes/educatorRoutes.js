@@ -18,7 +18,7 @@ import {
   getQuizByCourseAndChapter,
   generateQuizWithAI,
   getAssignmentSubmissions,
-  markSubmissionReviewed
+  reviewAndGradeSubmission,
 } from "../controllers/educatorController.js";
 import upload from "../configs/multer.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -37,25 +37,20 @@ educatorRouter.post(
   requireEducator,
   addCourse
 );
-educatorRouter.get(
-  "/course/:id",
+educatorRouter.get("/course/:id", requireEducator, getSingleCourse);
+educatorRouter.put("/publish-course/:courseId", requireEducator, publishCourse);
+educatorRouter.delete(
+  "/delete-course/:courseId",
   requireEducator,
-  getSingleCourse
+  deleteCourse
 );
-educatorRouter.put('/publish-course/:courseId', requireEducator, publishCourse);
-educatorRouter.delete('/delete-course/:courseId', requireEducator, deleteCourse);
-educatorRouter.put('/course/:id', requireEducator, updateCourse);
-
+educatorRouter.put("/course/:id", requireEducator, updateCourse);
 
 // Get Educator Courses
 educatorRouter.get("/course", requireEducator, getEducatorCourses);
 
 // Add Assignments
-educatorRouter.post(
-  "/assignment/add",
-  requireEducator,
-  addAssignmentToChapter
-);
+educatorRouter.post("/assignment/add", requireEducator, addAssignmentToChapter);
 educatorRouter.get("/assignment", requireEducator, getAllAssignments);
 educatorRouter
   .route("/assignment/:courseId/:chapterId/:assignmentId")
@@ -76,10 +71,7 @@ educatorRouter
   .put(requireEducator, quizController)
   .delete(requireEducator, quizController);
 
-  educatorRouter.post("/quiz/generate-ai", requireEducator, generateQuizWithAI);
-
-
-
+educatorRouter.post("/quiz/generate-ai", requireEducator, generateQuizWithAI);
 
 // Get Educator Dashboard Data
 educatorRouter.get("/dashboard", requireEducator, educatorDashboardData);
@@ -91,11 +83,16 @@ educatorRouter.get(
   getEnrolledStudentsData
 );
 
-educatorRouter.get("/assignment-submissions", requireEducator, getAssignmentSubmissions);
-educatorRouter.put(
-  "/assignment-submissions/:submissionId/review",
+educatorRouter.get(
+  "/assignment-submissions",
   requireEducator,
-  markSubmissionReviewed
+  getAssignmentSubmissions
+);
+
+educatorRouter.put(
+  "/assignment-submissions/:submissionId/review-grade",
+  requireEducator,
+  reviewAndGradeSubmission
 );
 
 export default educatorRouter;
