@@ -9,7 +9,10 @@ import {
   submitAssignment,
   getUserSubmissions,
   deleteSubmission,
-  editSubmission
+  editSubmission,
+  submitQuiz,
+  checkQuizSubmission,
+
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 
@@ -27,4 +30,6 @@ userRouter.post("/submit-assignment", submitAssignment);
 userRouter.get("/my-submissions/:courseId", getUserSubmissions);
 userRouter.delete("/delete-submission/:id", deleteSubmission);
 userRouter.put("/edit-submission/:id", editSubmission);
+userRouter.post("/submit-quiz", submitQuiz);
+userRouter.get("/check-quiz-submission/:courseId/:chapterId", checkQuizSubmission);
 export default userRouter;

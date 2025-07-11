@@ -3,6 +3,7 @@ import { CourseProgress } from "../models/CourseProgress.js";
 import { Purchase } from "../models/Purchase.js";
 import User from "../models/User.js";
 import AssignmentSubmission from "../models/AssignmentSubmission.js";
+import QuizSubmission from "../models/QuizSubmission.js";
 import stripe from "stripe";
 
 // Get User Data
@@ -91,7 +92,6 @@ export const userEnrolledCourses = async (req, res) => {
 
     const userData = await User.findById(userId).populate("enrolledCourses");
     // console.log("Fetched enrolledCourses from DB:", userData.enrolledCourses);
-
 
     res.json({ success: true, enrolledCourses: userData.enrolledCourses });
   } catch (error) {
@@ -200,19 +200,10 @@ export const submitAssignment = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    const {
-      courseId,
-      assignmentId,
-      assignmentTitle,
-      submissionFileUrl,
-    } = req.body;
+    const { courseId, assignmentId, assignmentTitle, submissionFileUrl } =
+      req.body;
 
-    if (
-      !courseId ||
-      !assignmentId ||
-      !assignmentTitle ||
-      !submissionFileUrl
-    ) {
+    if (!courseId || !assignmentId || !assignmentTitle || !submissionFileUrl) {
       return res.json({ success: false, message: "Missing required fields" });
     }
 
@@ -244,7 +235,7 @@ export const submitAssignment = async (req, res) => {
       assignmentId,
       assignmentTitle,
       submissionFileUrl,
-       submittedAt: new Date(),
+      submittedAt: new Date(),
     });
 
     res.json({ success: true, message: "Assignment submitted", submission });
@@ -305,6 +296,57 @@ export const editSubmission = async (req, res) => {
     await submission.save();
 
     res.json({ success: true, message: "Submission updated", submission });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const submitQuiz = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { courseId, chapterId, selectedAnswers, score } = req.body;
+
+    if (!courseId || !chapterId || !selectedAnswers || score === undefined) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing quiz data" });
+    }
+
+    const answersMap = new Map(Object.entries(selectedAnswers));
+
+    const submission = await QuizSubmission.findOneAndUpdate(
+      { userId, courseId, chapterId },
+      { selectedAnswers: answersMap, score },
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      }
+    );
+
+    return res.json({ success: true, submission });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const checkQuizSubmission = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { courseId, chapterId } = req.params;
+
+    const submission = await QuizSubmission.findOne({
+      userId,
+      courseId,
+      chapterId,
+    });
+
+    if (submission) {
+      res.json({ submitted: true, submission });
+    } else {
+      res.json({ submitted: false });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -23,7 +23,7 @@ const Player = () => {
   const { enrolledCourses, backendUrl, userData, fetchUserEnrolledCourses } =
     useContext(AppContext);
 
-  const { courseId } = useParams();
+  const { courseId, chapterId } = useParams();
   const [courseData, setCourseData] = useState(null);
   const [progressData, setProgressData] = useState(null);
   const [openSections, setOpenSections] = useState({});
@@ -36,10 +36,12 @@ const Player = () => {
 
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState("");
+  const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+  const [alreadyAttempted, setAlreadyAttempted] = useState(false);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+
   const fileInputRef = useRef(null);
 
   const getCourseData = () => {
@@ -59,27 +61,6 @@ const Player = () => {
 
   const toggleSection = (index) => {
     setOpenSections((prev) => ({ ...prev, [index]: !prev[index] }));
-  };
-  const selectContent = (content, type) => {
-    if (type === "quiz" && !content.id) {
-      content.id = `${content.title}-${Math.random()
-        .toString(36)
-        .substr(2, 9)}`; // Generate fallback id if missing
-    }
-    setSelectedContent(content);
-    setContentType(type);
-    if (type === "quiz") {
-      const questions = content.quizQuestions || content.questions || [];
-      setActiveQuiz({
-        ...content,
-        quizQuestions: questions, // normalize
-      });
-      setCurrentQuestionIndex(0);
-      setQuizCompleted(false);
-      setQuizScore(0);
-      setShowAnswer(false);
-      setSelectedAnswer("");
-    }
   };
 
   const markLectureAsCompleted = async (lectureId) => {
@@ -166,48 +147,15 @@ const Player = () => {
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "assignment_upload"); // replace with your preset
+    formData.append("upload_preset", "assignment_upload");
 
     const response = await axios.post(
-      "https://api.cloudinary.com/v1_1/demqrjawq/auto/upload", // replace with your Cloudinary name
+      "https://api.cloudinary.com/v1_1/demqrjawq/auto/upload",
       formData
     );
 
-    return response.data.secure_url; // Cloudinary file URL
+    return response.data.secure_url;
   };
-
-  // const handleFileUpload = async (assignmentId, file) => {
-  //   try {
-  //     const fileUrl = await uploadToCloudinary(file);
-  //     const token = localStorage.getItem("token");
-  //     const { data } = await axios.post(
-  //       `${backendUrl}/api/user/submit-assignment`,
-  //      {
-  //        courseId,
-  //       assignmentId,
-  //       assignmentTitle: selectedContent.title,
-  //       chapterId: selectedContent.chapterId, // Optional: add if available
-  //       submissionFileUrl: fileUrl,
-  //      },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-
-  //     if (data.success) {
-  //       toast.success("Assignment submitted successfully");
-  //       // Optionally refresh user progress
-  //       getCourseProgress();
-  //     } else {
-  //       toast.error(data.message);
-  //     }
-  //   } catch (err) {
-  //     toast.error("Upload failed. Try again.");
-  //     console.error(err);
-  //   }
-  // };
 
   const handleFileUpload = async (assignmentId, file) => {
     try {
@@ -279,28 +227,152 @@ const Player = () => {
       toast.success("Submission deleted");
       fetchMySubmissions();
     } catch (err) {
-      toast.error("Failed to delete");
+      toast.error("Failed to delete", err.message);
     }
   };
 
   const handleQuizAnswer = (option) => {
-    if (!activeQuiz?.quizQuestions?.[currentQuestionIndex]) return;
-
-    const currentQ = activeQuiz.quizQuestions[currentQuestionIndex];
-    setSelectedAnswer(option);
-    setShowAnswer(true);
-    if (option === currentQ.correctAnswer) setQuizScore((prev) => prev + 1);
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [currentQuestionIndex]: option,
+    }));
   };
 
   const nextQuestion = () => {
-    if (currentQuestionIndex + 1 >= activeQuiz.quizQuestions.length) {
-      setQuizCompleted(true);
+    if (currentQuestionIndex < activeQuiz.quizQuestions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      setCurrentQuestionIndex((prev) => prev + 1);
-      setSelectedAnswer("");
-      setShowAnswer(false);
+      calculateScoreAndSubmit();
     }
   };
+  const calculateScoreAndSubmit = async () => {
+    let score = 0;
+    activeQuiz.quizQuestions.forEach((q, i) => {
+      if (selectedAnswers[i] === q.correctAnswer) score++;
+    });
+
+    const { courseId, chapterId } = selectedContent || {};
+
+    const answersObj =
+      selectedAnswers instanceof Map
+        ? Object.fromEntries(selectedAnswers)
+        : selectedAnswers;
+
+    const payload = { courseId, chapterId, selectedAnswers: answersObj, score };
+    console.log("→ Submitting quiz payload:", payload);
+    if (!courseId || !chapterId || score == null) {
+      console.warn("Aborting submit—missing data:", payload);
+      toast.error("Quiz submission aborted: missing course or chapter ID");
+      return;
+    }
+
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/user/submit-quiz`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      console.log("submitQuiz success:", data);
+      setQuizScore(data.submission.score);
+      setSelectedAnswers(data.submission.selectedAnswers);
+      setQuizCompleted(true);
+      setAlreadyAttempted(true);
+      localStorage.setItem(
+        "lastSelectedContent",
+        JSON.stringify({ content: selectedContent, type: "quiz" })
+      );
+    } catch (err) {
+      console.error("submitQuiz error:", err.response || err);
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Could not submit quiz—check console"
+      );
+    }
+  };
+
+  const handleReattempt = () => {
+    setSelectedAnswers({});
+    setCurrentQuestionIndex(0);
+    setQuizCompleted(false);
+    setQuizScore(0);
+    setAlreadyAttempted(false);
+  };
+  const fetchSubmission = async (courseId, chapterId) => {
+    setLoadingQuiz(true);
+    try {
+      const res = await axios.get(
+        `${backendUrl}/api/user/check-quiz-submission/${courseId}/${chapterId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (res.data.submitted) {
+        setQuizCompleted(true);
+        setQuizScore(res.data.submission.score);
+        setSelectedAnswers(res.data.submission.selectedAnswers || {});
+        setAlreadyAttempted(true);
+      } else {
+        setQuizCompleted(false);
+        setAlreadyAttempted(false);
+        setSelectedAnswers({});
+        setQuizScore(0);
+      }
+    } catch (error) {
+      console.error("Failed to load quiz submission:", error);
+    } finally {
+      setLoadingQuiz(false);
+    }
+  };
+  const selectContent = (content, type) => {
+    setSelectedContent(content);
+    setContentType(type);
+    localStorage.setItem(
+      "lastSelectedContent",
+      JSON.stringify({ content, type })
+    );
+
+    if (type === "quiz") {
+      const questions = content.quizQuestions || content.questions || [];
+      setActiveQuiz({ ...content, quizQuestions: questions });
+      setSelectedAnswers({});
+      setCurrentQuestionIndex(0);
+      setQuizCompleted(false);
+      setQuizScore(0);
+      setAlreadyAttempted(false);
+    }
+  };
+  useEffect(() => {
+    const stored = localStorage.getItem("lastSelectedContent");
+    if (!stored) return;
+    const { content, type } = JSON.parse(stored);
+    if (type !== "quiz") {
+      setSelectedContent(content);
+      setContentType(type);
+      return;
+    }
+
+    setSelectedContent(content);
+    setContentType(type);
+    const questions = content.quizQuestions || content.questions || [];
+    setActiveQuiz({ ...content, quizQuestions: questions });
+
+    fetchSubmission(content.courseId, content.chapterId);
+  }, []);
+  useEffect(() => {
+    if (
+      contentType === "quiz" &&
+      selectedContent?.courseId &&
+      selectedContent?.chapterId
+    ) {
+      fetchSubmission(selectedContent.courseId, selectedContent.chapterId);
+    }
+  }, [selectedContent?.courseId, selectedContent?.chapterId, contentType]);
 
   useEffect(() => {
     if (enrolledCourses.length > 0) getCourseData();
@@ -416,15 +488,23 @@ const Player = () => {
                         {/* Quiz */}
                         {chapter.quiz?.quizQuestions?.length > 0 && (
                           <div
-                            key={`quiz-${
-                              chapter.quiz.id || chapter.quiz.title || index
-                            }`}
+                            key={`quiz-${chapter.chapterId}`}
                             className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer ${
                               selectedContent?.id === chapter.quiz.id
                                 ? "bg-purple-50 border border-purple-200"
                                 : "hover:bg-gray-50"
                             }`}
-                            onClick={() => selectContent(chapter.quiz, "quiz")}
+                            onClick={() =>
+                              selectContent(
+                                {
+                                  ...chapter.quiz,
+                                  chapterId: chapter.chapterId,
+                                  courseId: courseData._id,
+                                  id: `quiz-${chapter.chapterId}`,
+                                },
+                                "quiz"
+                              )
+                            }
                           >
                             <Award className="h-4 w-4 text-purple-500" />
                             <div className="flex-1 min-w-0">
@@ -555,7 +635,7 @@ const Player = () => {
                           (s) => s.assignmentId === selectedContent.assignmentId
                         );
                         return submission ? (
-                          <div className="mt-6 bg-white p-4 border rounded shadow-sm">
+                          <div className="mt-6 bg-white p-4 border rounded shadow-sm space-y-4">
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="text-sm font-medium text-gray-800">
@@ -569,35 +649,127 @@ const Player = () => {
                                   View Submitted File
                                 </a>
                               </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => fileInputRef.current?.click()}
-                                  className="text-sm bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleDeleteSubmission(submission._id)
-                                  }
-                                  className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                                >
-                                  Delete
-                                </button>
-                              </div>
+                              {!submission.grade && !submission.feedback && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() =>
+                                      fileInputRef.current?.click()
+                                    }
+                                    className="text-sm bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteSubmission(submission._id)
+                                    }
+                                    className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
+                            {/* Grade & Feedback */}
+                            {(submission.grade || submission.feedback) && (
+                              <div className="mt-2 p-4 bg-gray-50 border border-dashed rounded-lg">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                                  Educator Feedback
+                                </h4>
+                                {submission.grade && (
+                                  <p className="text-sm text-gray-800">
+                                    <span className="font-medium">Grade:</span>{" "}
+                                    <span className="text-blue-600 font-semibold">
+                                      {submission.grade}
+                                    </span>
+                                  </p>
+                                )}
+                                {submission.feedback && (
+                                  <p className="text-sm text-gray-800 mt-1">
+                                    <span className="font-medium">
+                                      Feedback:
+                                    </span>{" "}
+                                    {submission.feedback}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ) : null;
                       })()}
                   </div>
                 </>
-              ) : contentType === "quiz" && activeQuiz ? (
-                <>
-                  <h2 className="text-2xl font-bold mb-4">
-                    {selectedContent.title || "Quiz"}
-                  </h2>
+              ) : (
+                contentType === "quiz" &&
+                activeQuiz && (
                   <>
-                    {!quizCompleted ? (
+                    <h2 className="text-2xl font-bold mb-4">
+                      {selectedContent.title || "Quiz"}
+                    </h2>
+
+                    {loadingQuiz ? (
+                      <div className="text-center py-10">
+                        Loading your results…
+                      </div>
+                    ) : quizCompleted || alreadyAttempted ? (
+                      <>
+                        <div className="text-center mb-6">
+                          <h4 className="text-xl font-semibold text-green-700 mb-2">
+                            Quiz Completed!
+                          </h4>
+                          <p className="text-gray-700">
+                            You scored {quizScore} /{" "}
+                            {activeQuiz.quizQuestions.length} (
+                            {Math.round(
+                              (quizScore / activeQuiz.quizQuestions.length) *
+                                100
+                            )}
+                            %)
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          {activeQuiz.quizQuestions.map((q, idx) => (
+                            <div
+                              key={idx}
+                              className="p-4 border rounded bg-gray-50"
+                            >
+                              <p className="font-medium mb-1">
+                                Q{idx + 1}. {q.question}
+                              </p>
+                              <p
+                                className={`text-sm mb-1 ${
+                                  selectedAnswers[idx] === q.correctAnswer
+                                    ? "text-green-700"
+                                    : "text-red-700"
+                                }`}
+                              >
+                                Your Answer: {selectedAnswers[idx] || "—"}
+                              </p>
+                              {selectedAnswers[idx] !== q.correctAnswer && (
+                                <p className="text-sm text-green-600">
+                                  Correct: {q.correctAnswer}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-6 flex justify-center gap-4">
+                          <button
+                            disabled
+                            className="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed"
+                          >
+                            Already Attempted
+                          </button>
+                          <button
+                            onClick={handleReattempt}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                          >
+                            Reattempt
+                          </button>
+                        </div>
+                      </>
+                    ) : (
                       <>
                         <p className="text-gray-600 mb-2">
                           Question {currentQuestionIndex + 1} of{" "}
@@ -616,70 +788,38 @@ const Player = () => {
                           ].options.map((option, i) => (
                             <button
                               key={i}
-                              onClick={() =>
-                                !showAnswer && handleQuizAnswer(option)
-                              }
+                              onClick={() => handleQuizAnswer(option)}
                               className={`w-full px-4 py-3 text-left rounded-lg border ${
-                                showAnswer
-                                  ? option ===
-                                    activeQuiz.quizQuestions[
-                                      currentQuestionIndex
-                                    ].correctAnswer
-                                    ? "bg-green-100 border-green-300 text-green-700"
-                                    : selectedAnswer === option
-                                    ? "bg-red-100 border-red-300 text-red-700"
-                                    : ""
+                                selectedAnswers[currentQuestionIndex] === option
+                                  ? "bg-blue-100 border-blue-300"
                                   : "hover:bg-gray-50"
                               }`}
-                              disabled={showAnswer}
                             >
                               {option}
                             </button>
                           ))}
                         </div>
 
-                        {showAnswer && (
-                          <div className="flex justify-between items-center">
-                            <p className="text-sm text-gray-700">
-                              {selectedAnswer ===
-                              activeQuiz.quizQuestions[currentQuestionIndex]
-                                .correctAnswer
-                                ? "✅ Correct!"
-                                : `❌ Incorrect. Correct: ${activeQuiz.quizQuestions[currentQuestionIndex].correctAnswer}`}
-                            </p>
-                            <button
-                              onClick={nextQuestion}
-                              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                            >
-                              {currentQuestionIndex <
-                              activeQuiz.quizQuestions.length - 1
-                                ? "Next"
-                                : "Finish"}
-                            </button>
-                          </div>
-                        )}
+                        <div className="text-right">
+                          <button
+                            onClick={nextQuestion}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            disabled={
+                              selectedAnswers[currentQuestionIndex] ===
+                              undefined
+                            }
+                          >
+                            {currentQuestionIndex <
+                            activeQuiz.quizQuestions.length - 1
+                              ? "Next"
+                              : "Finish"}
+                          </button>
+                        </div>
                       </>
-                    ) : (
-                      <div className="text-center">
-                        <h4 className="text-xl font-semibold text-green-700 mb-2">
-                          Quiz Completed!
-                        </h4>
-                        <p className="text-gray-700 mb-4">
-                          You scored {quizScore} out of{" "}
-                          {activeQuiz.quizQuestions.length} (
-                          {Math.round(
-                            (quizScore / activeQuiz.quizQuestions.length) * 100
-                          )}
-                          %)
-                        </p>
-                      </div>
                     )}
                   </>
-
-                  {/* You can drop in your quiz logic here as shown in your CoursePlayer component */}
-                  {/* Use currentQuestionIndex, selectedAnswer, quizScore, quizCompleted, etc. */}
-                </>
-              ) : null}
+                )
+              )}
             </div>
           </div>
         </div>
