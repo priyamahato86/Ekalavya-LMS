@@ -25,6 +25,10 @@ const quizSubmissionSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  feedback: {
+  type: String,
+  default: "",
+}
 },
 {
   timestamps: true 

@@ -41,6 +41,8 @@ const Player = () => {
   const [quizScore, setQuizScore] = useState(0);
   const [alreadyAttempted, setAlreadyAttempted] = useState(false);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [quizFeedback, setQuizFeedback] = useState("");
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -381,6 +383,37 @@ const Player = () => {
   useEffect(() => {
     getCourseProgress();
   }, []);
+
+  const fetchQuizFeedback = async () => {
+    if (!selectedContent?.courseId || !selectedContent?.chapterId) return;
+
+    try {
+      setLoadingFeedback(true);
+      const { data } = await axios.post(
+        `${backendUrl}/api/user/generate-feedback`,
+        {
+          courseId: selectedContent.courseId,
+          chapterId: selectedContent.chapterId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (data.success) {
+        setQuizFeedback(data.feedback);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      toast.error("Failed to load feedback");
+      console.error(err);
+    } finally {
+      setLoadingFeedback(false);
+    }
+  };
 
   // const renderLectureContent = (lecture) => {
   //   if (lecture.lectureType === 'video' && lecture.lectureUrl.includes('youtube')) {
@@ -754,19 +787,43 @@ const Player = () => {
                             </div>
                           ))}
                         </div>
-                        <div className="mt-6 flex justify-center gap-4">
+                        <div className="mt-8 flex flex-col gap-6 w-full">
+                          <div className="flex flex-wrap justify-center gap-4 w-full">
                           <button
                             disabled
-                            className="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed"
+                            className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed transition"
                           >
                             Already Attempted
                           </button>
                           <button
                             onClick={handleReattempt}
-                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg transition"
                           >
                             Reattempt
                           </button>
+                          <button
+                            onClick={fetchQuizFeedback}
+                            className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2 rounded-lg transition"
+                          >
+                            Get AI Feedback
+                          </button>
+                          </div>
+                          {loadingFeedback ? (
+                            <p className="text-center text-blue-600 font-medium">
+                              Generating feedback...
+                            </p>
+                          ) : (
+                            quizFeedback && (
+                              <div className="w-full p-6 bg-white border border-green-200 rounded-lg shadow">
+                                <h4 className="text-xl font-semibold text-green-800 mb-4">
+                                  AI Feedback on Your Quiz
+                                </h4>
+                                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                                  {quizFeedback}
+                                </p>
+                              </div>
+                            )
+                          )}
                         </div>
                       </>
                     ) : (

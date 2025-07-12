@@ -5,6 +5,7 @@ import User from "../models/User.js";
 import AssignmentSubmission from "../models/AssignmentSubmission.js";
 import QuizSubmission from "../models/QuizSubmission.js";
 import stripe from "stripe";
+import axios from "axios";
 
 // Get User Data
 export const getUserData = async (req, res) => {
@@ -349,5 +350,92 @@ export const checkQuizSubmission = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const generateQuizFeedbackWithAI = async (req, res) => {
+  const { courseId, chapterId } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const course = await Course.findById(courseId);
+    //const chapter = course?.courseContent.find(ch => ch._id.toString() === chapterId);
+    const chapter = course.courseContent.find(
+  ch => ch.chapterId === chapterId
+);
+if (!chapter) {
+  return res
+    .status(400)
+    .json({ success: false, message: "Chapter not found." });
+}
+    if (!course || !chapter) {
+      return res.status(400).json({ success: false, message: "Invalid course or chapter ID" });
+    }
+
+    const submission = await QuizSubmission.findOne({ userId, courseId, chapterId });
+    if (!submission) {
+      return res.status(404).json({ success: false, message: "Quiz submission not found" });
+    }
+
+    const questions = chapter.quiz.quizQuestions;
+    const answers = submission.selectedAnswers instanceof Map
+      ? Object.fromEntries(submission.selectedAnswers)
+      : submission.selectedAnswers;
+
+    // Prepare feedback prompt
+    let prompt = `The student has completed the quiz for the chapter "${chapter.chapterTitle}" in the course "${course.courseTitle}". Provide constructive feedback based on their answers.\n\n`;
+
+    questions.forEach((q, index) => {
+      const selected = answers[q._id] || "Not answered";
+      prompt += `Q${index + 1}: ${q.question}\nSelected: ${selected}\nCorrect: ${q.correctAnswer}\n\n`;
+    });
+
+    prompt += `Score: ${submission.score}/${questions.length}\n\nPlease analyze the mistakes, highlight strong areas, and give suggestions for improvement in a friendly tone.`;
+
+    const data = JSON.stringify({
+      system_instruction: {
+        parts: [
+          {
+            text:
+              "You are an AI tutor providing feedback on a student's quiz performance. Based on their answers and correct answers, offer strengths, areas for improvement, and specific advice. Keep the tone encouraging and supportive."
+          }
+        ]
+      },
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "text/plain"
+      }
+    });
+
+    const config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      headers: {
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      data: data
+    };
+
+    const response = await axios.request(config);
+    const feedback = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No feedback generated.";
+
+    // Optionally: update feedback in submission
+    submission.feedback = feedback;
+    await submission.save();
+
+    return res.json({ success: true, feedback });
+  } catch (err) {
+    console.error("AI feedback generation failed:", err);
+    res.status(500).json({ success: false, message: "AI feedback generation failed" });
   }
 };

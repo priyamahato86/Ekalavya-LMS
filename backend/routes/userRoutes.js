@@ -12,7 +12,7 @@ import {
   editSubmission,
   submitQuiz,
   checkQuizSubmission,
-
+  generateQuizFeedbackWithAI
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 
@@ -32,4 +32,5 @@ userRouter.delete("/delete-submission/:id", deleteSubmission);
 userRouter.put("/edit-submission/:id", editSubmission);
 userRouter.post("/submit-quiz", submitQuiz);
 userRouter.get("/check-quiz-submission/:courseId/:chapterId", checkQuizSubmission);
+userRouter.post("/generate-feedback", generateQuizFeedbackWithAI);
 export default userRouter;
