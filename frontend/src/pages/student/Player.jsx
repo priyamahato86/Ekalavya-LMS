@@ -8,6 +8,8 @@ import { toast } from "react-toastify";
 import Rating from "../../components/student/Rating";
 import Footer from "../../components/student/Footer";
 import Loading from "../../components/student/Loading";
+import Markdown from "react-markdown";
+
 import {
   BookOpen,
   ChevronDown,
@@ -126,23 +128,34 @@ const Player = () => {
       toast.error(error.message);
     }
   };
-
   const renderLectureContent = (lecture) => {
-    if (
-      lecture.lectureType === "video" &&
-      lecture.lectureUrl.includes("youtube")
-    ) {
-      const videoId = lecture.lectureUrl.split("/").pop();
-      return <YouTube videoId={videoId} className="w-full aspect-video" />;
-    } else if (lecture.lectureType === "document") {
+    if (lecture.lectureType === "video") {
+      let videoUrl = lecture.lectureUrl;
+      let videoId = "";
+
+      if (videoUrl.includes("youtu.be/")) {
+        videoId = videoUrl.split("youtu.be/")[1];
+      } else if (videoUrl.includes("watch?v=")) {
+        videoId = new URLSearchParams(new URL(videoUrl).search).get("v");
+      }
+
       return (
-        <iframe
-          src={lecture.documentUrl}
-          className="w-full h-[500px] border rounded"
-          title="Lecture Document"
-        ></iframe>
+        <div className="w-full aspect-video">
+          <YouTube
+            videoId={videoId}
+            opts={{
+              width: "100%",
+              height: "100%",
+              playerVars: {
+                autoplay: 0,
+              },
+            }}
+            className="w-full h-full"
+          />
+        </div>
       );
     }
+
     return <p className="text-gray-500">Unsupported lecture format</p>;
   };
 
@@ -261,7 +274,7 @@ const Player = () => {
         : selectedAnswers;
 
     const payload = { courseId, chapterId, selectedAnswers: answersObj, score };
-    console.log("→ Submitting quiz payload:", payload);
+    console.log("Submitting quiz payload:", payload);
     if (!courseId || !chapterId || score == null) {
       console.warn("Aborting submit—missing data:", payload);
       toast.error("Quiz submission aborted: missing course or chapter ID");
@@ -285,6 +298,7 @@ const Player = () => {
         "lastSelectedContent",
         JSON.stringify({ content: selectedContent, type: "quiz" })
       );
+      fetchQuizFeedback();
     } catch (err) {
       console.error("submitQuiz error:", err.response || err);
       toast.error(
@@ -318,6 +332,7 @@ const Player = () => {
         setQuizCompleted(true);
         setQuizScore(res.data.submission.score);
         setSelectedAnswers(res.data.submission.selectedAnswers || {});
+        setQuizFeedback(res.data.submission.feedback || "");
         setAlreadyAttempted(true);
       } else {
         setQuizCompleted(false);
@@ -334,10 +349,10 @@ const Player = () => {
   const selectContent = (content, type) => {
     setSelectedContent(content);
     setContentType(type);
-    localStorage.setItem(
-      "lastSelectedContent",
-      JSON.stringify({ content, type })
-    );
+    // localStorage.setItem(
+    //   "lastSelectedContent",
+    //   JSON.stringify({ content, type })
+    // );
 
     if (type === "quiz") {
       const questions = content.quizQuestions || content.questions || [];
@@ -347,25 +362,15 @@ const Player = () => {
       setQuizCompleted(false);
       setQuizScore(0);
       setAlreadyAttempted(false);
+      fetchSubmission(content.courseId, content.chapterId);
     }
   };
+
   useEffect(() => {
-    const stored = localStorage.getItem("lastSelectedContent");
-    if (!stored) return;
-    const { content, type } = JSON.parse(stored);
-    if (type !== "quiz") {
-      setSelectedContent(content);
-      setContentType(type);
-      return;
-    }
-
-    setSelectedContent(content);
-    setContentType(type);
-    const questions = content.quizQuestions || content.questions || [];
-    setActiveQuiz({ ...content, quizQuestions: questions });
-
-    fetchSubmission(content.courseId, content.chapterId);
+    setSelectedContent(null);
+    setContentType("");
   }, []);
+
   useEffect(() => {
     if (
       contentType === "quiz" &&
@@ -759,6 +764,22 @@ const Player = () => {
                             )}
                             %)
                           </p>
+                          {loadingFeedback ? (
+                            <p className="text-center text-blue-600 font-medium">
+                              Generating feedback...
+                            </p>
+                          ) : (
+                            quizFeedback && (
+                              <div className="w-full p-6 bg-white border border-green-200 rounded-lg shadow">
+                                <h4 className="text-xl font-semibold text-green-800 mb-4">
+                                  AI Feedback on Your Quiz
+                                </h4>
+                                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                                  <Markdown>{quizFeedback}</Markdown>
+                                </p>
+                              </div>
+                            )
+                          )}
                         </div>
 
                         <div className="space-y-4">
@@ -789,41 +810,25 @@ const Player = () => {
                         </div>
                         <div className="mt-8 flex flex-col gap-6 w-full">
                           <div className="flex flex-wrap justify-center gap-4 w-full">
-                          <button
-                            disabled
-                            className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed transition"
-                          >
-                            Already Attempted
-                          </button>
-                          <button
-                            onClick={handleReattempt}
-                            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg transition"
-                          >
-                            Reattempt
-                          </button>
-                          <button
+                            <button
+                              disabled
+                              className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed transition"
+                            >
+                              Already Attempted
+                            </button>
+                            <button
+                              onClick={handleReattempt}
+                              className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg transition"
+                            >
+                              Reattempt
+                            </button>
+                            {/* <button
                             onClick={fetchQuizFeedback}
                             className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2 rounded-lg transition"
                           >
                             Get AI Feedback
-                          </button>
+                          </button> */}
                           </div>
-                          {loadingFeedback ? (
-                            <p className="text-center text-blue-600 font-medium">
-                              Generating feedback...
-                            </p>
-                          ) : (
-                            quizFeedback && (
-                              <div className="w-full p-6 bg-white border border-green-200 rounded-lg shadow">
-                                <h4 className="text-xl font-semibold text-green-800 mb-4">
-                                  AI Feedback on Your Quiz
-                                </h4>
-                                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                                  {quizFeedback}
-                                </p>
-                              </div>
-                            )
-                          )}
                         </div>
                       </>
                     ) : (

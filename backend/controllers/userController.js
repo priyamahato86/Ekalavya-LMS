@@ -397,7 +397,7 @@ if (!chapter) {
         parts: [
           {
             text:
-              "You are an AI tutor providing feedback on a student's quiz performance. Based on their answers and correct answers, offer strengths, areas for improvement, and specific advice. Keep the tone encouraging and supportive."
+              "You are an AI tutor providing feedback on a student's quiz performance.Answer in max 100 words. Based on their answers and correct answers, offer strengths, areas for improvement, and specific advice. Keep the tone encouraging and supportive."
           }
         ]
       },
