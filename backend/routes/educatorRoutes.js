@@ -19,7 +19,8 @@ import {
   generateQuizWithAI,
   getAssignmentSubmissions,
   reviewAndGradeSubmission,
-  getSingleAssignmentSubmission,
+  getSingleAssignmentSubmission,getCertificationTest,
+  addCertificationTest,certificationTestController,getCertificationTests,generateCertificationTestWithAI
 } from "../controllers/educatorController.js";
 import upload from "../configs/multer.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -97,5 +98,10 @@ educatorRouter.put(
   requireEducator,
   reviewAndGradeSubmission
 );
-
+educatorRouter.post("/certification-test/add", requireEducator, addCertificationTest);
+educatorRouter.get("/certification-test", requireEducator, getCertificationTests);
+educatorRouter.get("/certification-test/:testId", requireEducator, getCertificationTest);
+educatorRouter.put("/certification-test/:testId", requireEducator, certificationTestController);
+educatorRouter.delete("/certification-test/:testId", requireEducator, certificationTestController);
+educatorRouter.post("/certification-test/generate-ai", requireEducator, generateCertificationTestWithAI);
 export default educatorRouter;

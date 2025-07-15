@@ -1,63 +1,64 @@
-import  { useContext, useEffect, useState } from 'react'
-import { AppContext } from '../../context/AppContext'
-import axios from 'axios'
-import { Line } from 'rc-progress';
-import Footer from '../../components/student/Footer';
-import { toast } from 'react-toastify';
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "../../context/AppContext";
+import axios from "axios";
+import { Line } from "rc-progress";
+import Footer from "../../components/student/Footer";
+import { toast } from "react-toastify";
 
 const MyEnrollments = () => {
+  const {
+    userData,
+    enrolledCourses,
+    fetchUserEnrolledCourses,
+    navigate,
+    backendUrl,
+    calculateCourseDuration,
+    calculateNoOfLectures,
+  } = useContext(AppContext);
 
-    const { userData, enrolledCourses, fetchUserEnrolledCourses, navigate, backendUrl,  calculateCourseDuration, calculateNoOfLectures } = useContext(AppContext)
+  const [progressArray, setProgressData] = useState([]);
 
-    const [progressArray, setProgressData] = useState([])
+  const getCourseProgress = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-    const getCourseProgress = async () => {
-        try {
-            const token = localStorage.getItem('token');
+      const tempProgressArray = await Promise.all(
+        enrolledCourses.map(async (course) => {
+          const { data } = await axios.post(
+            `${backendUrl}/api/user/get-course-progress`,
+            { courseId: course._id },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
 
+          let totalLectures = calculateNoOfLectures(course);
 
-            const tempProgressArray = await Promise.all(
-                enrolledCourses.map(async (course) => {
-                    const { data } = await axios.post(
-                        `${backendUrl}/api/user/get-course-progress`,
-                        { courseId: course._id },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
+          const lectureCompleted = data.progressData
+            ? data.progressData.lectureCompleted.length
+            : 0;
+          return { totalLectures, lectureCompleted };
+        })
+      );
 
-                    let totalLectures = calculateNoOfLectures(course);
+      setProgressData(tempProgressArray);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
-                    const lectureCompleted = data.progressData ? data.progressData.lectureCompleted.length : 0;
-                    return { totalLectures, lectureCompleted };
-                })
-            );
+  useEffect(() => {
+    if (userData) {
+      fetchUserEnrolledCourses();
+    }
+  }, [userData]);
 
-            setProgressData(tempProgressArray);
-        } catch (error) {
-            toast.error(error.message);
-        }
-    };
+  useEffect(() => {
+    if (enrolledCourses.length > 0) {
+      getCourseProgress();
+    }
+  }, [enrolledCourses]);
 
-    
-
-    useEffect(() => {
-        if (userData) {
-            fetchUserEnrolledCourses()
-        }
-    }, [userData])
-
-    useEffect(() => {
-
-        if (enrolledCourses.length > 0) {
-            getCourseProgress()
-        }
-
-    }, [enrolledCourses])
-
-    
-
-
-    return (
- <>
+  return (
+    <>
       <div className="md:px-36 px-8 pt-10 pb-24">
         <h1 className="text-2xl font-semibold">My Enrollments</h1>
         <table className="md:table-auto table-fixed w-full overflow-hidden border mt-10">
@@ -67,6 +68,9 @@ const MyEnrollments = () => {
               <th className="px-4 py-3 font-semibold truncate">Duration</th>
               <th className="px-4 py-3 font-semibold truncate">Completed</th>
               <th className="px-4 py-3 font-semibold truncate">Status</th>
+              <th className="px-4 py-3 font-semibold truncate">
+                Certification
+              </th>
             </tr>
           </thead>
           <tbody className="text-gray-700">
@@ -92,8 +96,6 @@ const MyEnrollments = () => {
                       className="bg-gray-300 rounded-full"
                     />
                   </div>
-                  
-
                 </td>
                 <td className="px-4 py-3 max-sm:hidden">
                   {calculateCourseDuration(course)}
@@ -117,6 +119,27 @@ const MyEnrollments = () => {
                       : "On Going"}
                   </button>
                 </td>
+                <td className="px-4 py-3 max-sm:hidden">
+                  {course.hasPassedCertification ? (
+                    <button
+                      onClick={() =>
+                        navigate(`/certification/${course._id}/certificate`)
+                      }
+                      className="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 text-sm"
+                    >
+                      Download Certificate
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        navigate(`/certification/${course._id}/test`)
+                      }
+                      className="bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 text-sm"
+                    >
+                      Take Test
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -127,5 +150,4 @@ const MyEnrollments = () => {
   );
 };
 
-
-export default MyEnrollments
+export default MyEnrollments;

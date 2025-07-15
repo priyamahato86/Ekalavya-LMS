@@ -3,6 +3,7 @@ import Course from '../models/Course.js';
 import { Purchase } from '../models/Purchase.js';
 import User from '../models/User.js';
 import AssignmentSubmission from "../models/AssignmentSubmission.js";
+import CertificationTest from '../models/CertificationTest.js';
 import mongoose from 'mongoose';
 import axios from 'axios';
 
@@ -645,5 +646,213 @@ export const reviewAndGradeSubmission = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const addCertificationTest = async (req, res) => {
+  try {
+    const {
+      courseId,
+      durationMinutes,
+      totalMarks,
+      passMarks,
+      questions,
+      generatedByAI,
+    } = req.body;
+
+    if (!courseId || !durationMinutes || !totalMarks || !passMarks || !questions || questions.length === 0) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newTest = await CertificationTest.create({
+      courseId,
+      educatorId: req.user.id,
+      durationMinutes,
+      totalMarks,
+      passMarks,
+      questions,
+      generatedByAI: generatedByAI || false,
+    });
+
+    res.status(201).json({ success: true, test: newTest });
+  } catch (err) {
+    console.error("Error creating test:", err);
+    res.status(500).json({ message: "Failed to create certification test" });
+  }
+};
+// GET all tests for educator
+export const getCertificationTests = async (req, res) => {
+  try {
+    const educatorId = req.user?.id;
+
+    if (!educatorId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const tests = await CertificationTest.find({ educatorId });
+
+    res.status(200).json({ success: true, tests });
+  } catch (err) {
+    console.error("Error in getCertificationTests:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch certification tests" });
+  }
+};
+
+
+// GET a single certification test by ID
+export const getCertificationTest = async (req, res) => {
+  try {
+    const { testId } = req.params;
+
+    const test = await CertificationTest.findOne({
+      _id: testId,
+      educatorId: req.user.id,
+    });
+
+    if (!test)
+      return res.status(404).json({ success: false, message: "Test not found" });
+
+    return res.json({ success: true, test });
+  } catch (error) {
+    console.error("Error in getCertificationTest:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// PUT or DELETE controller for updating/deleting a certification test
+export const certificationTestController = async (req, res) => {
+  try {
+    const { testId } = req.params;
+
+    const test = await CertificationTest.findOne({
+      _id: testId,
+      educatorId: req.user.id,
+    });
+
+    if (!test)
+      return res.status(404).json({ success: false, message: "Test not found" });
+
+    // DELETE
+    if (req.method === "DELETE") {
+      await CertificationTest.deleteOne({ _id: testId });
+      return res.json({ success: true, message: "Test deleted successfully" });
+    }
+
+    // UPDATE
+    if (req.method === "PUT") {
+      const {
+        courseId,
+        durationMinutes,
+        totalMarks,
+        passMarks,
+        questions,
+        generatedByAI,
+      } = req.body;
+
+      test.courseId = courseId || test.courseId;
+      test.durationMinutes = durationMinutes ?? test.durationMinutes;
+      test.totalMarks = totalMarks ?? test.totalMarks;
+      test.passMarks = passMarks ?? test.passMarks;
+      test.questions = questions || test.questions;
+      test.generatedByAI = generatedByAI ?? test.generatedByAI;
+      test.updatedAt = new Date();
+
+      await test.save();
+
+      return res.json({ success: true, message: "Test updated successfully", test });
+    }
+
+    res.status(405).json({ success: false, message: "Method not allowed" });
+  } catch (error) {
+    console.error("Error in certificationTestController:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const generateCertificationTestWithAI = async (req, res) => {
+  const { courseId } = req.body;
+
+  try {
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    const allChapters = course.courseContent.map(ch => ch.chapterTitle).join(", ");
+
+    const prompt = `Generate a certification test for the course titled '${course.courseTitle}' covering the following chapters: ${allChapters}. 
+    The test should contain exactly 30 questions with a mix of medium and hard difficulty. 
+    Each question must be in the format:
+    [{"question": "string", "options": ["string1", "string2", "string3", "string4"], "answer": number}] 
+    where 'answer' is the 0-based index of the correct option. Ensure all questions are relevant to the topics.`
+
+    const data = JSON.stringify({
+      system_instruction: {
+        parts: [
+          {
+            text:
+              "You are a quiz generation AI. Your task is to create a 30-question certification test for the given course name and list of chapters. " +
+              "Each question should be in JSON format: " +
+              `[{"question": "string", "options": ["string1", "string2", "string3", "string4"], "answer": number}]. ` +
+              "Ensure a mix of medium and hard difficulty, avoid repetition, and cover all topics fairly."
+          }
+        ]
+      },
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              question: { type: "STRING" },
+              options: {
+                type: "ARRAY",
+                items: { type: "STRING" }
+              },
+              answer: { type: "NUMBER" }
+            },
+            propertyOrdering: ["question", "options", "answer"]
+          }
+        }
+      }
+    });
+
+    const config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      headers: {
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      data: data
+    };
+
+    const response = await axios.request(config);
+    const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    let quizData;
+    try {
+      quizData = JSON.parse(raw);
+    } catch (err) {
+      return res.status(500).json({ success: false, message: "Invalid JSON returned by AI" });
+    }
+
+    const questions = quizData.map(q => ({
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.options[q.answer]
+    }));
+
+    return res.json({ success: true, questions });
+  } catch (err) {
+    console.error("AI certification test generation failed:", err);
+    res.status(500).json({ success: false, message: "AI certification test generation failed" });
   }
 };

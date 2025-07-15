@@ -27,7 +27,9 @@ import EditAssignment from "./pages/educator/EditAssignment";
 import EditQuiz from "./pages/educator/EditQuiz";
 import Submitted from "./pages/educator/Submitted";
 import ReviewAssignment from "./pages/educator/ReviewAssignment";
-
+import CertificationTest from "./pages/educator/CertificationTest";
+import AddCertificationTest from "./pages/educator/AddCertificationTest";
+import EditCertificationTest from "./pages/educator/EditCertificationTest";
 const App = () => {
   const isEducatorRoute = useMatch("/educator/*");
 
@@ -74,7 +76,9 @@ const App = () => {
           <Route path="quiz" element={<Quiz />} />
           <Route path="quiz/add" element={<AddQuiz />} />
           <Route path="quiz/edit/:courseId/:chapterId" element={<EditQuiz />} />
-
+          <Route path="certification-test" element={<CertificationTest />} />
+          <Route path="certification-test/add" element={<AddCertificationTest />} />
+          <Route path="certification-test/edit/:testId" element={<EditCertificationTest />} />
           <Route path="course/edit/:id" element={<EditCourse />} />
           <Route
             path="assignment/edit/:courseId/:chapterId/:assignmentId"

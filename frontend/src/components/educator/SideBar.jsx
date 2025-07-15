@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { NavLink } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { AppContext } from "../../context/AppContext";
-import { NotebookPen, Shapes, FileCheck,UserRoundCheck,SquarePlus } from "lucide-react";
+import { NotebookPen, Shapes, FileCheck,UserRoundCheck,SquarePlus,FileBadge } from "lucide-react";
 
 const Sidebar = () => {
   const { isEducator } = useContext(AppContext);
@@ -15,6 +15,7 @@ const Sidebar = () => {
       icon: <NotebookPen />,
     },
     { name: "Quizz", path: "/educator/quiz", icon: <Shapes /> },
+    { name: "Certification Test", path: "/educator/certification-test", icon: <FileBadge /> },
     {
       name: "Students Enrolled",
       path: "/educator/students-enrolled",
