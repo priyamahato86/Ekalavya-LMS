@@ -4,6 +4,7 @@ import { AppContext } from "../../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Loading from "../../components/student/Loading";
+import { User } from "lucide-react";
 
 const Dashboard = () => {
   const { backendUrl, isEducator, currency } = useContext(AppContext);
@@ -109,11 +110,9 @@ const Dashboard = () => {
                       {index + 1}
                     </td>
                     <td className="md:px-4 px-2 py-3 flex items-center space-x-3">
-                      <img
-                        src={item.student.imageUrl}
-                        alt="Profile"
-                        className="w-9 h-9 rounded-full"
-                      />
+                      <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
+                        <User className="w-5 h-5 text-gray-600" />
+                      </div>
                       <span className="truncate">{item.student.name}</span>
                     </td>
                     <td className="px-4 py-3 truncate">{item.courseTitle}</td>

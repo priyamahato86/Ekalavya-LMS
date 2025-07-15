@@ -5,31 +5,10 @@ import User from '../models/User.js';
 import AssignmentSubmission from "../models/AssignmentSubmission.js";
 import mongoose from 'mongoose';
 import axios from 'axios';
-//import { clerkClient } from '@clerk/express'
 
-// update role to educator
-// export const updateRoleToEducator = async (req, res) => {
-
-//     try {
-
-//         const userId = req.user.id;
-
-//         await clerkClient.users.updateUserMetadata(userId, {
-//             publicMetadata: {
-//                 role: 'educator',
-//             },
-//         })
-
-//         res.json({ success: true, message: 'You can publish a course now' })
-
-//     } catch (error) {
-//         res.json({ success: false, message: error.message })
-//     }
-
-// }
 export const updateRoleToEducator = async (req, res) => {
   try {
-    const userId = req.user.id; // updated
+    const userId = req.user.id; 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
@@ -56,14 +35,11 @@ export const addCourse = async (req, res) => {
         const parsedCourseData = JSON.parse(courseData);
        console.log(parsedCourseData)
 
-        // Upload the thumbnail first
         const imageUpload = await cloudinary.uploader.upload(imageFile.path);
 
-        // Assign educator and thumbnail after parsing
         parsedCourseData.educator = educatorId;
         parsedCourseData.courseThumbnail = imageUpload.secure_url;
         console.log(' Final Course:', JSON.stringify(parsedCourseData, null, 2));
-        // Now create course after all data is ready
         const newCourse = await Course.create(parsedCourseData);
 
         res.json({ success: true, message: 'Course Added', course: newCourse });
@@ -126,8 +102,6 @@ export const updateCourse = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-
 
 export const addAssignmentToChapter = async (req, res) => {
   try {
@@ -204,7 +178,6 @@ export const assignmentController = async (req, res) => {
     if (assignmentIndex === -1) return res.status(404).json({ success: false, message: 'Assignment not found' });
 
     if (req.method === 'DELETE') {
-      // Delete assignment
       chapter.assignments.splice(assignmentIndex, 1);
       await course.save();
       return res.json({ success: true, message: 'Assignment deleted successfully' });
@@ -241,8 +214,6 @@ export const addQuizToChapter = async (req, res) => {
 
     const chapter = course.courseContent.find(ch => ch.chapterId === chapterId);
     if (!chapter) return res.status(404).json({ success: false, message: 'Chapter not found' });
-
-    // Replace any existing quiz
     chapter.quiz = {
       quizType,
       quizQuestions: quizType === 'manual' ? quizQuestions : [],
@@ -314,7 +285,7 @@ export const getQuizByCourseAndChapter = async (req, res) => {
 };
 
 
-// Update or Delete a Quiz (Unified Controller)
+// Update or Delete a Quiz 
 export const quizController = async (req, res) => {
   try {
     const { courseId, chapterId } = req.params;
@@ -351,9 +322,6 @@ export const quizController = async (req, res) => {
   }
 };
 
-
-
-// Get Educator Courses
 export const getEducatorCourses = async (req, res) => {
     try {
 
@@ -368,7 +336,7 @@ export const getEducatorCourses = async (req, res) => {
     }
 }
 
-// Get Educator Dashboard Data ( Total Earning, Enrolled Students, No. of Courses)
+// Get Educator Dashboard Data 
 export const educatorDashboardData = async (req, res) => {
     try {
         const educator = req.user.id;
@@ -378,16 +346,12 @@ export const educatorDashboardData = async (req, res) => {
         const totalCourses = courses.length;
 
         const courseIds = courses.map(course => course._id);
-
-        // Calculate total earnings from purchases
         const purchases = await Purchase.find({
             courseId: { $in: courseIds },
             status: 'completed'
         });
 
         const totalEarnings = purchases.reduce((sum, purchase) => sum + purchase.amount, 0);
-
-        // Collect unique enrolled student IDs with their course titles
         const enrolledStudentsData = [];
         for (const course of courses) {
             const students = await User.find({
@@ -415,18 +379,14 @@ export const educatorDashboardData = async (req, res) => {
     }
 };
 
-// Get Enrolled Students Data with Purchase Data
 export const getEnrolledStudentsData = async (req, res) => {
     try {
         const educator = req.user.id;
 
-        // Fetch all courses created by the educator
         const courses = await Course.find({ educator });
 
-        // Get the list of course IDs
         const courseIds = courses.map(course => course._id);
 
-        // Fetch purchases with user and course data
         const purchases = await Purchase.find({
             courseId: { $in: courseIds },
             status: 'completed'
@@ -453,7 +413,7 @@ export const getEnrolledStudentsData = async (req, res) => {
 };
 
 export const generateQuizWithAI = async (req, res) => {
-  const { courseId, chapterId, difficulty = "medium" } = req.body;
+  const { courseId, chapterId, difficulty = "medium", numQuestions = 5 } = req.body;
 
   try {
     const course = await Course.findById(courseId);
@@ -463,14 +423,14 @@ export const generateQuizWithAI = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid course or chapter ID" });
     }
 
-    const prompt = `Generate a quiz for the course '${course.courseTitle}', module '${chapter.chapterTitle}', difficulty level '${difficulty}'.`;
+    const prompt = `Generate a quiz for the course '${course.courseTitle}', module '${chapter.chapterTitle}', difficulty level '${difficulty}',number of questions ${numQuestions}. The quiz should be in the format: [{"question": "string", "options": ["string1", "string2", "string3", "string4"], "answer": number}] where the answer is the index of the correct option (0-based).`;
 
     const data = JSON.stringify({
       system_instruction: {
         parts: [
           {
             text:
-              "You are a quiz generation AI. Your task is to create a quiz consisting of 10 questions based on the provided course name and module name. " +
+              "You are a quiz generation AI. Your task is to create a quiz consisting  exactly ${numQuestions} quiz questions based on the provided course name and module name. " +
               "Optionally, you may also receive a difficulty level. Each question should be formatted as follows: " +
               "[{\"question\": \"string\", \"options\": [\"string1\", \"string2\", \"string3\", \"string4\"], \"answer\": number}]. " +
               "The answer key is index of the correct option (0-based)"
@@ -540,28 +500,123 @@ export const generateQuizWithAI = async (req, res) => {
   }
 };
 
+
 export const getAssignmentSubmissions = async (req, res) => {
   try {
     const educatorId = req.user.id;
+    const courses    = await Course.find({ educator: educatorId });
+    const courseMap  = Object.fromEntries(
+      courses.map(c => [c._id.toString(), c])
+    );
 
-    // Find courses created by this educator
-    const courses = await Course.find({ educator: educatorId });
-
-    const courseIds = courses.map((course) => course._id);
-
-    // Fetch all assignment submissions related to these courses
     const submissions = await AssignmentSubmission.find({
-      courseId: { $in: courseIds },
+      courseId: { $in: Object.keys(courseMap) },
     }).sort({ submittedAt: -1 });
 
-    res.json({ success: true, submissions });
-  } catch (error) {
-    res
+    const studentIds = submissions.map(s => s.studentId.toString());
+    const students   = await User.find({ _id: { $in: studentIds } });
+    const studentMap = Object.fromEntries(
+      students.map(u => [u._id.toString(), u.name])
+    );
+
+    const enriched = submissions.map(s => {
+      const course  = courseMap[s.courseId.toString()];
+      if (!course) {
+        return {
+          ...s.toObject(),
+          studentName: studentMap[s.studentId.toString()] || "Unknown",
+          courseTitle: "Unknown Course",
+          chapterTitle: "Unknown Chapter",
+          assignmentTitle: "Unknown Assignment",
+        };
+      }
+
+      const chapId   = s.chapterId  ? s.chapterId.toString()  : null;
+      const assignId = s.assignmentId ? s.assignmentId.toString() : null;
+      let chapter = chapId
+        ? course.courseContent.find(ch => ch.chapterId === chapId)
+        : null;
+
+      if (!chapter && assignId) {
+        chapter = course.courseContent.find(ch =>
+          Array.isArray(ch.assignments) &&
+          ch.assignments.some(a => a.assignmentId === assignId)
+        );
+      }
+      const assignment = chapter?.assignments.find(
+        a => a.assignmentId === assignId
+      );
+
+      return {
+        ...s.toObject(),
+        studentName:     studentMap[s.studentId.toString()] || "Unknown",
+        courseTitle:     course.courseTitle || "Unknown Course",
+        chapterTitle:    chapter?.chapterTitle      || "Unknown Chapter",
+        assignmentTitle:
+          assignment?.title   ||  
+          s.assignmentTitle   ||  
+          "Unknown Assignment",
+      };
+    });
+
+    return res.json({ success: true, submissions: enriched });
+  }
+  catch (error) {
+    console.error("Error in getAssignmentSubmissions:", error);
+    return res
       .status(500)
-      .json({ success: false, message: "Error fetching submissions", error });
+      .json({ success: false, message: "Error fetching submissions" });
   }
 };
 
+export const getSingleAssignmentSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const submission = await AssignmentSubmission.findById(submissionId);
+    if (!submission) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Submission not found" });
+    }
+
+    const course  = await Course.findById(submission.courseId).lean();
+    const student = await User.findById(submission.studentId).lean();
+    const chapId   = submission.chapterId   ? submission.chapterId.toString()   : null;
+    const assignId = submission.assignmentId ? submission.assignmentId.toString() : null;
+    let chapter = chapId
+      ? course.courseContent.find(ch => ch.chapterId === chapId)
+      : null;
+    if (!chapter && assignId) {
+      chapter = course.courseContent.find(ch =>
+        Array.isArray(ch.assignments) &&
+        ch.assignments.some(a => a.assignmentId === assignId)
+      );
+    }
+
+    const assignment = chapter?.assignments.find(
+      a => a.assignmentId === assignId
+    );
+
+    const enriched = {
+      ...submission.toObject(),  
+      studentName:     student?.name           || "Unknown Student",
+      courseTitle:     course?.courseTitle     || "Unknown Course",
+      chapterTitle:    chapter?.chapterTitle   || "Unknown Chapter",
+      assignmentTitle:
+        assignment?.title      ||  
+        submission.assignmentTitle ||  
+        "Unknown Assignment",
+    };
+
+    return res.json({ success: true, submission: enriched });
+  }
+  catch (err) {
+    console.error("Error in getSingleAssignmentSubmission:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error" });
+  }
+};
 
 
 export const reviewAndGradeSubmission = async (req, res) => {

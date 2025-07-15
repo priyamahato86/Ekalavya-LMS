@@ -9,16 +9,6 @@ const Quiz = () => {
   const [quizzesLoading, setQuizzesLoading] = useState(true);
   const [quizzes, setQuizzes] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [chapters, setChapters] = useState([]);
-  const [quizType, setQuizType] = useState("manual");
-  const [editMode, setEditMode] = useState(false);
-  const [editChapterId, setEditChapterId] = useState("");
-  const [form, setForm] = useState({
-    courseId: "",
-    chapterId: "",
-    quizType: "manual",
-    quizQuestions: [{ question: "", options: ["", "", "", ""], answer: "" }],
-  });
 
   const { backendUrl, isEducator, navigate } = useContext(AppContext);
   const fetchQuizzes = async () => {
@@ -70,20 +60,6 @@ const Quiz = () => {
     }
   };
 
-  const handleEditQuiz = (quiz) => {
-    setForm({
-      courseId: quiz.courseId,
-      chapterId: quiz.chapterId,
-      quizType: quiz.quizType,
-      quizQuestions:
-        quiz.quizQuestions.length > 0
-          ? quiz.quizQuestions
-          : [{ question: "", options: ["", "", "", ""], answer: "" }],
-    });
-    setQuizType(quiz.quizType);
-    setEditMode(true);
-    setEditChapterId(quiz.chapterId);
-  };
 
   return quizzesLoading ? (
     <Loading />
@@ -106,7 +82,7 @@ const Quiz = () => {
               <tr>
                 <th className="px-4 py-3 font-semibold truncate">Course</th>
                 <th className="px-4 py-3 font-semibold truncate">Chapter</th>
-                <th className="px-4 py-3 font-semibold truncate">Type</th>
+                <th className="px-4 py-3 font-semibold truncate">Number of Questions</th>
                 <th className="px-4 py-3 font-semibold truncate">Date</th>
                 <th className="px-4 py-3 font-semibold truncate">Actions</th>
               </tr>
@@ -128,7 +104,7 @@ const Quiz = () => {
                         )?.chapterTitle || q.chapterId}
                     </td>
                     <td className="px-4 py-3 capitalize truncate">
-                      {q.quizType}
+                      {q.quizQuestions.length}
                     </td>
                     <td className="px-4 py-3 truncate">
                       {new Date(q.updatedAt || new Date()).toLocaleDateString()}

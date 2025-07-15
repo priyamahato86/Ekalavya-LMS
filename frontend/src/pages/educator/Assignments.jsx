@@ -9,17 +9,8 @@ const Assignments = () => {
   const [assignmentsLoading, setAssignmentsLoading] = useState(true);
   const [assignments, setAssignments] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [chapters, setChapters] = useState([]);
   const { backendUrl, isEducator, navigate } = useContext(AppContext);
-  const [editingAssignmentId, setEditingAssignmentId] = useState(null);
-  const [form, setForm] = useState({
-    courseId: "",
-    chapterId: "",
-    title: "",
-    description: "",
-    resourceUrl: "",
-    dueDate: "",
-  });
+  
 
   const fetchAssignments = async () => {
     setAssignmentsLoading(true);
@@ -93,7 +84,7 @@ const Assignments = () => {
               <tr>
                 <th className="px-4 py-3 font-semibold truncate">Course</th>
                 <th className="px-4 py-3 font-semibold truncate">Chapter</th>
-                <th className="px-4 py-3 font-semibold truncate">Title</th>
+                <th className="px-4 py-3 font-semibold truncate">Assignment Title</th>
                 <th className="px-4 py-3 font-semibold truncate">Due Date</th>
                 <th className="px-4 py-3 font-semibold truncate">Actions</th>
               </tr>

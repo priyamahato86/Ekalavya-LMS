@@ -201,10 +201,10 @@ export const submitAssignment = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    const { courseId, assignmentId, assignmentTitle, submissionFileUrl } =
+    const { courseId,chapterId, assignmentId, assignmentTitle, submissionFileUrl } =
       req.body;
 
-    if (!courseId || !assignmentId || !assignmentTitle || !submissionFileUrl) {
+    if (!courseId || !chapterId || !assignmentId || !assignmentTitle || !submissionFileUrl) {
       return res.json({ success: false, message: "Missing required fields" });
     }
 
@@ -233,6 +233,7 @@ export const submitAssignment = async (req, res) => {
       studentId: userId,
       studentName: user.name,
       courseId,
+      chapterId,
       assignmentId,
       assignmentTitle,
       submissionFileUrl,

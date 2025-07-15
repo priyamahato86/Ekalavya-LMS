@@ -6,8 +6,8 @@ import { useParams } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 
 const EditQuiz = () => {
-  const { backendUrl, navigate , isEducator } = useContext(AppContext);
-  const {  courseId, chapterId } = useParams();
+  const { backendUrl, navigate, isEducator } = useContext(AppContext);
+  const { courseId, chapterId } = useParams();
 
   const [courses, setCourses] = useState([]);
   const [chapters, setChapters] = useState([]);
@@ -15,9 +15,9 @@ const EditQuiz = () => {
   const [form, setForm] = useState({
     courseId: courseId,
     chapterId: chapterId,
+    numQuestions: 0,
     quizQuestions: [{ question: "", options: ["", "", "", ""], answer: "" }],
   });
-
 
   useEffect(() => {
     if (isEducator) {
@@ -42,7 +42,9 @@ const EditQuiz = () => {
         const res = await axios.get(
           `${backendUrl}/api/educator/quiz/${courseId}/${chapterId}`,
           {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           }
         );
         const quiz = res.data.quiz;
@@ -50,6 +52,7 @@ const EditQuiz = () => {
         setForm({
           courseId,
           chapterId,
+          numQuestions: quiz.quizQuestions?.length || 0,
           quizQuestions: quiz.quizQuestions,
         });
       } catch (err) {
@@ -70,7 +73,7 @@ const EditQuiz = () => {
         questions[i].options[optIndex] = value;
         if (questions[i].correctAnswer === questions[i].options[optIndex]) {
           questions[i].correctAnswer = value;
-         }
+        }
       } else {
         questions[i][field] = value;
       }
@@ -162,7 +165,20 @@ const EditQuiz = () => {
                 </option>
               ))}
             </select>
-
+            <input
+              type="number"
+              min="1"
+              max="20"
+              placeholder="No. of questions"
+              className="p-2 border rounded w-48"
+              value={form.numQuestions || ""}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  numQuestions: Number(e.target.value),
+                }))
+              }
+            />
             <button
               type="button"
               className="flex items-center gap-2 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition-colors"
@@ -197,15 +213,15 @@ const EditQuiz = () => {
                         handleQuestionChange(i, "correctAnswer", opt)
                       }
                     />
-                  <input
-                    type="text"
-                    value={opt}
-                    onChange={(e) =>
-                      handleQuestionChange(i, "option", e.target.value, j)
-                    }
-                    placeholder={`Option ${j + 1}`}
-                    className="p-2 border rounded w-full"
-                  />
+                    <input
+                      type="text"
+                      value={opt}
+                      onChange={(e) =>
+                        handleQuestionChange(i, "option", e.target.value, j)
+                      }
+                      placeholder={`Option ${j + 1}`}
+                      className="p-2 border rounded w-full"
+                    />
                   </label>
                 ))}
               </div>

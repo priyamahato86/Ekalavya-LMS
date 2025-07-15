@@ -349,10 +349,6 @@ const Player = () => {
   const selectContent = (content, type) => {
     setSelectedContent(content);
     setContentType(type);
-    // localStorage.setItem(
-    //   "lastSelectedContent",
-    //   JSON.stringify({ content, type })
-    // );
 
     if (type === "quiz") {
       const questions = content.quizQuestions || content.questions || [];
@@ -420,18 +416,6 @@ const Player = () => {
     }
   };
 
-  // const renderLectureContent = (lecture) => {
-  //   if (lecture.lectureType === 'video' && lecture.lectureUrl.includes('youtube')) {
-  //     const videoId = lecture.lectureUrl.split('/').pop();
-  //     return <YouTube videoId={videoId} className="w-full aspect-video" />;
-  //   } else if (lecture.lectureType === 'document') {
-  //     return (
-  //       <iframe src={lecture.documentUrl} className="w-full h-[500px] border rounded" title="Lecture Document"></iframe>
-  //     );
-  //   }
-  //   return <p className="text-gray-500">Unsupported lecture format</p>;
-  // };
-
   return courseData ? (
     <>
       <div className="min-h-screen w-full px-4 sm:px-6 lg:px-12 py-8 bg-gray-50">
@@ -448,7 +432,7 @@ const Player = () => {
 
               <div className="max-h-[600px] overflow-y-auto">
                 {courseData.courseContent.map((chapter, index) => (
-                  <div key={index} className="border-b">
+                  <div key={chapter.chapterId} className="border-b">
                     {/* Chapter Header */}
                     <div
                       className="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -503,7 +487,7 @@ const Player = () => {
                         {/* Assignments */}
                         {chapter.assignments?.map((a) => (
                           <div
-                            key={a.id}
+                            key={a.assignmentId}
                             className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer ${
                               selectedContent?.id === a.id
                                 ? "bg-orange-50 border border-orange-200"
@@ -526,7 +510,6 @@ const Player = () => {
                         {/* Quiz */}
                         {chapter.quiz?.quizQuestions?.length > 0 && (
                           <div
-                            key={`quiz-${chapter.chapterId}`}
                             className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer ${
                               selectedContent?.id === chapter.quiz.id
                                 ? "bg-purple-50 border border-purple-200"
@@ -774,9 +757,7 @@ const Player = () => {
                                 <h4 className="text-xl font-semibold text-green-800 mb-4">
                                   AI Feedback on Your Quiz
                                 </h4>
-                                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                                  <Markdown>{quizFeedback}</Markdown>
-                                </p>
+                                <Markdown>{quizFeedback}</Markdown>
                               </div>
                             )
                           )}
@@ -822,12 +803,6 @@ const Player = () => {
                             >
                               Reattempt
                             </button>
-                            {/* <button
-                            onClick={fetchQuizFeedback}
-                            className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2 rounded-lg transition"
-                          >
-                            Get AI Feedback
-                          </button> */}
                           </div>
                         </div>
                       </>

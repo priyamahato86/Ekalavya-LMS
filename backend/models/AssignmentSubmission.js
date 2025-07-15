@@ -16,6 +16,7 @@ const assignmentSubmissionSchema = new mongoose.Schema({
     ref: "Course",
     required: true,
   },
+  chapterId: { type: String, required: true },
   assignmentId: {
     type: String,
     required: true, 

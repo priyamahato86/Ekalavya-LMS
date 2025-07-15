@@ -19,6 +19,7 @@ import {
   generateQuizWithAI,
   getAssignmentSubmissions,
   reviewAndGradeSubmission,
+  getSingleAssignmentSubmission,
 } from "../controllers/educatorController.js";
 import upload from "../configs/multer.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -88,6 +89,8 @@ educatorRouter.get(
   requireEducator,
   getAssignmentSubmissions
 );
+
+educatorRouter.get("/assignment-submissions/:submissionId", requireEducator, getSingleAssignmentSubmission);
 
 educatorRouter.put(
   "/assignment-submissions/:submissionId/review-grade",
