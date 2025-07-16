@@ -781,7 +781,7 @@ export const generateCertificationTestWithAI = async (req, res) => {
     const allChapters = course.courseContent.map(ch => ch.chapterTitle).join(", ");
 
     const prompt = `Generate a certification test for the course titled '${course.courseTitle}' covering the following chapters: ${allChapters}. 
-    The test should contain exactly 30 questions with a mix of medium and hard difficulty. 
+    The test should contain exactly 5 questions with a mix of medium and hard difficulty. 
     Each question must be in the format:
     [{"question": "string", "options": ["string1", "string2", "string3", "string4"], "answer": number}] 
     where 'answer' is the 0-based index of the correct option. Ensure all questions are relevant to the topics.`

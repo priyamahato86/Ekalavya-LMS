@@ -4,6 +4,8 @@ import { Purchase } from "../models/Purchase.js";
 import User from "../models/User.js";
 import AssignmentSubmission from "../models/AssignmentSubmission.js";
 import QuizSubmission from "../models/QuizSubmission.js";
+import CertificationTest from "../models/CertificationTest.js";
+import CertificationTestSubmission from "../models/CertificationTestSubmission.js";
 import stripe from "stripe";
 import axios from "axios";
 
@@ -360,7 +362,6 @@ export const generateQuizFeedbackWithAI = async (req, res) => {
 
   try {
     const course = await Course.findById(courseId);
-    //const chapter = course?.courseContent.find(ch => ch._id.toString() === chapterId);
     const chapter = course.courseContent.find(
   ch => ch.chapterId === chapterId
 );
@@ -430,7 +431,6 @@ if (!chapter) {
     const response = await axios.request(config);
     const feedback = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No feedback generated.";
 
-    // Optionally: update feedback in submission
     submission.feedback = feedback;
     await submission.save();
 
@@ -438,5 +438,106 @@ if (!chapter) {
   } catch (err) {
     console.error("AI feedback generation failed:", err);
     res.status(500).json({ success: false, message: "AI feedback generation failed" });
+  }
+};
+
+
+export const getCertificationTestForStudent = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId       = req.user.id;
+
+    const test = await CertificationTest.findOne({ courseId }).lean();
+    if (!test) {
+      return res.status(404).json({ message: "No certification test found" });
+    }
+
+    const lastSubmission = await CertificationTestSubmission
+      .findOne({ courseId, studentId: userId })
+      .sort({ attemptedAt: -1 })
+      .lean();
+    let retakeSeconds = null;
+    if (lastSubmission) {
+      const nowMs   = Date.now();
+      const thenMs  = new Date(lastSubmission.attemptedAt).getTime();
+      const diffMs  = 24 * 3600 * 1000 - (nowMs - thenMs);
+      if (diffMs > 0) retakeSeconds = Math.floor(diffMs / 1000);
+    }
+
+    const payload = {
+      test:          retakeSeconds === null ? test : null,
+      lastSubmission,
+      retakeSeconds,  
+      totalMarks:    test.questions.length,
+      durationSecs:  test.durationSecs || 3600, 
+    };
+
+    return res.json(payload);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+export const submitCertificationTest = async (req, res) => {
+  try {
+    const { courseId, testId, answers } = req.body;
+    const userId = req.user.id;
+
+    const test = await CertificationTest.findById(testId);
+    if (!test) return res.status(404).json({ message: "Test not found" });
+
+
+    let submission = await CertificationTestSubmission.findOne({ courseId, studentId: userId });
+    if (submission) {
+      Object.assign(submission, { answers, score, passed, attemptedAt: new Date() });
+      await submission.save();
+    } else {
+      submission = await CertificationTestSubmission.create({
+        studentId: userId,
+        courseId,
+        testId,
+        answers,
+        score,
+        passed,
+        attemptedAt: new Date(),
+      });
+    }
+
+
+    const nowMs  = Date.now();
+    const thenMs = new Date(submission.attemptedAt).getTime();
+    const diffMs = 24*3600*1000 - (nowMs - thenMs);
+    const retakeSeconds = diffMs > 0 ? Math.floor(diffMs/1000) : null;
+
+    return res.json({
+      message: "Test submitted successfully",
+      score,
+      passed,
+      totalMarks: test.questions.length,
+      canDownloadCertificate: passed,
+      submission,    
+      retakeSeconds,     
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+export const getLastCertificationSubmission = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.user.id;
+
+    const submission = await CertificationTestSubmission
+      .findOne({ courseId, studentId: userId })
+      .sort({ attemptedAt: -1 })
+      .lean();
+
+    return res.json({ submission });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: err.message });
   }
 };

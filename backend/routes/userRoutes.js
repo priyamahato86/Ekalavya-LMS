@@ -12,7 +12,8 @@ import {
   editSubmission,
   submitQuiz,
   checkQuizSubmission,
-  generateQuizFeedbackWithAI
+  generateQuizFeedbackWithAI,
+  getCertificationTestForStudent,submitCertificationTest,getLastCertificationSubmission
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 
@@ -33,4 +34,8 @@ userRouter.put("/edit-submission/:id", editSubmission);
 userRouter.post("/submit-quiz", submitQuiz);
 userRouter.get("/check-quiz-submission/:courseId/:chapterId", checkQuizSubmission);
 userRouter.post("/generate-feedback", generateQuizFeedbackWithAI);
+userRouter.get("/my-submissions/:courseId", getUserSubmissions);
+userRouter.get("/certification-test/:courseId", getCertificationTestForStudent);
+userRouter.post("/certification-test/submit", submitCertificationTest);
+userRouter.get("/certification-test/last-submission/:courseId",  getLastCertificationSubmission);
 export default userRouter;

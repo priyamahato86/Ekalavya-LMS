@@ -30,6 +30,7 @@ import ReviewAssignment from "./pages/educator/ReviewAssignment";
 import CertificationTest from "./pages/educator/CertificationTest";
 import AddCertificationTest from "./pages/educator/AddCertificationTest";
 import EditCertificationTest from "./pages/educator/EditCertificationTest";
+import CertificationTestPage from "./pages/student/CertificationTestPage";
 const App = () => {
   const isEducatorRoute = useMatch("/educator/*");
 
@@ -54,6 +55,14 @@ const App = () => {
           element={
             <StudentRoute>
               <MyEnrollments />
+            </StudentRoute>
+          }
+        />
+        <Route
+          path="/certification-test/:courseId"
+          element={
+            <StudentRoute>
+              <CertificationTestPage />
             </StudentRoute>
           }
         />

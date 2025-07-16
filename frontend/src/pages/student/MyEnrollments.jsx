@@ -132,9 +132,9 @@ const MyEnrollments = () => {
                   ) : (
                     <button
                       onClick={() =>
-                        navigate(`/certification/${course._id}/test`)
+                        navigate(`/certification-test/${course._id}`)
                       }
-                      className="bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 text-sm"
+                      className="px-3 sm:px-5 py-1.5 sm:py-2 bg-blue-600 max-sm:text-xs text-white"
                     >
                       Take Test
                     </button>
