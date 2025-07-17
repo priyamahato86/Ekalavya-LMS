@@ -541,3 +541,26 @@ export const getLastCertificationSubmission = async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 };
+
+// controllers/userController.js
+export const getCertificationStatus = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { courseId } = req.params;
+
+    const result = await CertificationTestSubmission.findOne({
+      studentId,
+      courseId,
+      passed: true,
+    }).sort({ attemptedAt: -1 }).lean();
+
+   return res
+      .status(200)
+      .json({ hasPassed: Boolean(result) });
+  } catch (err) {
+    console.error("getCertificationStatus failed:", err);
+    return res
+      .status(500)
+      .json({ message: "Failed to check certification status" });
+  }
+};
