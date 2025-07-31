@@ -2,7 +2,6 @@ import axios from "axios";
 import { createContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-//import { useAuth, useUser } from "@clerk/clerk-react";
 import humanizeDuration from "humanize-duration";
 
 export const AppContext = createContext();
@@ -12,8 +11,6 @@ export const AppContextProvider = (props) => {
   const currency = import.meta.env.VITE_CURRENCY;
 
   const navigate = useNavigate();
-  // const { getToken } = useAuth()
-  // const { user } = useUser()
 
   const [showLogin, setShowLogin] = useState(false);
   const [isEducator, setIsEducator] = useState(false);

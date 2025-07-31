@@ -8,13 +8,10 @@ export const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // console.log("Decoded token:", decoded);
     if (!mongoose.Types.ObjectId.isValid(decoded.id)) {
       return res.status(401).json({ message: "Invalid user ID in token" });
     }
-    //req.user = decoded;
-    //req.userDetails = await User.findById(decoded.id).select("-password");
-    req.user = await User.findById(decoded.id); // this must be a Mongo ObjectId
+    req.user = await User.findById(decoded.id); 
     if (!req.user) return res.status(401).json({ message: "Invalid user" });
     next();
   } catch (err) {
@@ -30,4 +27,3 @@ export const protectStudent = (req, res, next) => {
   next();
 };
 
-//export default authMiddleware;
